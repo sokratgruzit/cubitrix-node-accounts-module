@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express();
-const baseController = require("../controllers/accunts_controller");
+const baseController = require("../controllers/accounts_controller");
 // const validation = require('../middleware/validation_middleware');
 
 router.post("/login", baseController.login_account);
