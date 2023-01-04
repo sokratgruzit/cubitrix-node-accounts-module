@@ -1,22 +1,26 @@
-function error_message(message){
+function error_message(message) {
     return {
         success: false,
         message: message
     };
 }
-function success_message(message){
+
+function success_message(message) {
     return {
         success: true,
         message: message
     };
 }
-function success_response(res, data){
+
+function success_response(res, data) {
     return res.status(200).send(data);
 }
-function error_response(res, data){
+
+function error_response(res, data) {
     return res.status(400).send(data);
 }
-module.exports ={
+
+module.exports = {
     error_message,
     success_message,
     success_response,

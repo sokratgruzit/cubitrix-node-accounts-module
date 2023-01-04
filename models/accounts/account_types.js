@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const account_types = new mongoose.Schema(
   {
-    name:String
+    name: String
   },
   {
     timestamps: true,
