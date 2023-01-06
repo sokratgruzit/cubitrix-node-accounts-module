@@ -11,8 +11,18 @@ const account_auth = new mongoose.Schema(
       dropDups: true,
     },
     password: String,
-    google2fa: Number,
-    google2fa_secret: String,
+    otp_enabled: {
+      type: Boolean,
+      default: false
+    },
+    otp_verified: {
+      type: Boolean,
+      default: false
+    },
+    otp_ascii: String,
+    otp_hex: String,
+    otp_base32: String,
+    otp_auth_url: String,
     remember_token: String,
     keys: String
   },
