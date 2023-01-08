@@ -14,9 +14,21 @@ function index(name) {
 
 // login with email for account recovery
 async function login_with_email(req, res) {
-  let data = req.body;
+  let { address } = req.body;
 
-  return main_helper.success_response(res, data);
+  const account = await account_auth.findOne({ address });
+
+  if (!account) {
+    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
+  }
+
+  if (account) {
+    let otp_enabled = account.otp_enabled;
+
+    return main_helper.success_response(res, otp_enabled);
+  }
+
+  return main_helper.error_response(res, "Error while validate user");
 }
 
 // logic of logging in

@@ -6,6 +6,7 @@ const g2faController = require("../controllers/google_2fa_controller");
 
 router.post("/login", baseController.login_account);
 router.post("/update_profile", baseController.update_meta);
+router.post("/recovery/login", baseController.login_with_email);
 
 // google 2 factore auth routes
 router.post("/otp/generate", g2faController.generate_OTP);

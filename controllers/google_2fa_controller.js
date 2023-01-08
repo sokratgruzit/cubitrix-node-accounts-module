@@ -42,7 +42,7 @@ const verify_OTP = async (req, res) => {
   }
     
   const verified = speakeasy.totp.verify({
-    secret: account.otp_base32,
+    secret: account_auth.otp_base32,
     encoding: "base32",
     token,
   });
@@ -51,7 +51,7 @@ const verify_OTP = async (req, res) => {
     return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
-  let update_account_auth = await account.findOneAndUpdate(
+  let update_account_auth = await account_auth.findOneAndUpdate(
     { address: address },
     {
       otp_enabled: true,
@@ -80,7 +80,7 @@ const validate_OTP = async (req, res) => {
   }
 
   const valid_token = speakeasy.totp.verify({
-    secret: account?.otp_base32,
+    secret: account_auth?.otp_base32,
     encoding: "base32",
     token,
     window: 1,
@@ -108,7 +108,7 @@ const disable_OTP = async (req, res) => {
     return main_helper.error_response(res, "Account doesn't exist");
   }
 
-  let update_account_auth = await account.findOneAndUpdate(
+  let update_account_auth = await account_auth.findOneAndUpdate(
     { address: address },
     {
       otp_enabled: false
