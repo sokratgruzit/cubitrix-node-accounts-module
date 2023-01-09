@@ -4,6 +4,9 @@ const account_auth = require("../models/accounts/account_auth");
 const account_types = require("../models/accounts/account_types");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
+const account_auth = require("../models/accounts/account_auth");
+
+const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
 
@@ -14,21 +17,31 @@ function index(name) {
 
 // login with email for account recovery
 async function login_with_email(req, res) {
-  let { address } = req.body;
+  let { email, password } = req.body;
 
-  const account = await account_auth.findOne({ address });
-
+  const account = await account_meta.findOne({ email });
   if (!account) {
     return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
-  if (account) {
-    let otp_enabled = account.otp_enabled;
+  const account_auth = await account_auth.findOne({ address: account.address });
 
-    return main_helper.success_response(res, otp_enabled);
+  const passwordMatch = await account_auth.match_password(password);
+
+  if (!passwordMatch) {
+    return main_helper.error_response(res, "Incorrect password");
   }
 
-  return main_helper.error_response(res, "Error while validate user");
+  const accessToken = jwt.sign({ address: account, address }, "jwt_secret", {
+    expiresIn: "24hm",
+  });
+
+  try {
+    let otp_enabled = account.otp_enabled;
+    return main_helper.success_response(res, otp_enabled, accessToken);
+  } catch (e) {
+    return main_helper.error_response(res, "Error while validate user");
+  }
 }
 
 // logic of logging in
@@ -39,27 +52,18 @@ async function login_account(req, res) {
     if (address == undefined || balance == undefined) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields")
+        main_helper.error_message("Fill all fields"),
       );
     }
 
     let type_id = await account_helper.get_type_id("user_current");
-    let account_exists = await account_helper.check_account_exists(
-      address,
-      type_id
-    );
+    let account_exists = await account_helper.check_account_exists(address, type_id);
 
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
     }
-
-    let account_saved = await save_account(
-      address,
-      type_id,
-      balance,
-      "user",
-      ""
-    );
+    let account_saved = await save_account(address, type_id, balance, "user", "");
+    await account_auth.create({ address });
 
     if (account_saved.success) {
       return main_helper.success_response(res, account_saved);
@@ -67,34 +71,25 @@ async function login_account(req, res) {
 
     return main_helper.error_response(res, account_exists);
   } catch (e) {
-    return main_helper.error_response(
-      res,
-      main_helper.error_message(e.message)
-    );
+    return main_helper.error_response(res, main_helper.error_message(e.message));
   }
 }
 
 // logic of checking profile info
 async function update_meta(req, res) {
   try {
-    let { address, name, email, mobile, date_of_birth, nationality, avatar } =
-      req.body;
+    let { address, name, email, mobile, date_of_birth, nationality, avatar } = req.body;
 
     if (address == undefined) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields")
+        main_helper.error_message("Fill all fields"),
       );
     }
 
     let type_id = await account_helper.get_type_id("user_current");
-    let account_exists = await account_helper.check_account_exists(
-      address,
-      type_id
-    );
-    let account_meta_exists = await account_helper.check_account_meta_exists(
-      address
-    );
+    let account_exists = await account_helper.check_account_exists(address, type_id);
+    let account_meta_exists = await account_helper.check_account_meta_exists(address);
 
     if (!account_exists.success) {
       return main_helper.error_response(res, account_exists);
@@ -108,7 +103,7 @@ async function update_meta(req, res) {
         mobile,
         date_of_birth,
         nationality,
-        avatar
+        avatar,
       );
 
       if (account_updated.success) {
@@ -122,7 +117,7 @@ async function update_meta(req, res) {
         mobile,
         date_of_birth,
         nationality,
-        avatar
+        avatar,
       );
 
       if (account_saved.success) {
@@ -132,10 +127,7 @@ async function update_meta(req, res) {
 
     return main_helper.error_response(res, "Error while saving");
   } catch (e) {
-    return main_helper.error_response(
-      res,
-      main_helper.error_message(e.message)
-    );
+    return main_helper.error_response(res, main_helper.error_message(e.message));
   }
 }
 
@@ -147,7 +139,7 @@ async function save_account_meta(
   mobile,
   date_of_birth,
   nationality,
-  avatar
+  avatar,
 ) {
   try {
     let save_user = await account_meta.create({
@@ -178,7 +170,7 @@ async function update_account_meta(
   mobile,
   date_of_birth,
   nationality,
-  avatar
+  avatar,
 ) {
   try {
     let save_user = await account_meta.findOneAndUpdate(
@@ -191,7 +183,7 @@ async function update_account_meta(
         date_of_birth: new Date(date_of_birth),
         nationality: nationality,
         avatar: avatar,
-      }
+      },
     );
 
     if (save_user) {
@@ -205,13 +197,7 @@ async function update_account_meta(
 }
 
 // saving account in db
-async function save_account(
-  address,
-  type_id,
-  balance,
-  account_category,
-  account_owner
-) {
+async function save_account(address, type_id, balance, account_category, account_owner) {
   try {
     let save_user = await accounts.create({
       address: address,
