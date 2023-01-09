@@ -114,7 +114,7 @@ async function check_and_send_verification_email(address, email) {
             "email already exists and email owner will be notified about this fact"
           );
         } else {
-          return main_helper.error_message("sending email failed");
+          return main_helper.error_message("email already exists");
         }
       } else {
         // save in db
