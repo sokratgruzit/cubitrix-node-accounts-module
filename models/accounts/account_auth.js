@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const bcrypt = require('bcrypt');
+const bcrypt = require("bcrypt");
 
 const account_auth = new mongoose.Schema(
   {
@@ -13,27 +13,27 @@ const account_auth = new mongoose.Schema(
     password: String,
     otp_enabled: {
       type: Boolean,
-      default: false
+      default: false,
     },
     otp_verified: {
       type: Boolean,
-      default: false
+      default: false,
     },
     otp_ascii: String,
     otp_hex: String,
     otp_base32: String,
     otp_auth_url: String,
     remember_token: String,
-    keys: String
+    keys: String,
   },
   {
     timestamps: true,
-  }
+  },
 );
 
-account_auth.pre('save', async function (next) {
-  if (!this.isModified) {
-      next();
+account_auth.pre("save", async function (next) {
+  if (!this.isModified || !this.password) {
+    next();
   }
 
   const salt = await bcrypt.genSalt(10);

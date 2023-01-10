@@ -5,7 +5,11 @@ const helper = require("../helpers/accounts");
 // const validation = require('../middleware/validation_middleware');
 
 const g2faController = require("../controllers/google_2fa_controller");
-// const validation = require('../middleware/validation_middleware');
+// const validation = require("../middleware/validation_middleware");
+
+const isAuthenticated = require("../middleware/isAuthenticated");
+
+router.use(isAuthenticated);
 
 router.post("/login", baseController.login_account);
 // router.post("/update_profile", baseController.update_meta);

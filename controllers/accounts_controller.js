@@ -1,6 +1,9 @@
 const accounts = require("../models/accounts/accounts");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
+const account_auth = require("../models/accounts/account_auth");
+
+const jwt = require("jsonwebtoken");
 
 require("dotenv").config();
 
@@ -11,21 +14,34 @@ function index(name) {
 
 // login with email for account recovery
 async function login_with_email(req, res) {
-  let { address } = req.body;
+  let { email, password } = req.body;
 
-  const account = await account_auth.findOne({ address });
-
+  const account = await account_meta.findOne({ email });
   if (!account) {
-    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
+    return main_helper.error_response(
+      res,
+      "Token is invalid or user doesn't exist"
+    );
   }
 
-  if (account) {
+  const account_auth = await account_auth.findOne({ address: account.address });
+
+  const passwordMatch = await account_auth.match_password(password);
+
+  if (!passwordMatch) {
+    return main_helper.error_response(res, "Incorrect password");
+  }
+
+  const accessToken = jwt.sign({ address: account, address }, "jwt_secret", {
+    expiresIn: "24hm",
+  });
+
+  try {
     let otp_enabled = account.otp_enabled;
-
-    return main_helper.success_response(res, otp_enabled);
+    return main_helper.success_response(res, otp_enabled, accessToken);
+  } catch (e) {
+    return main_helper.error_response(res, "Error while validate user");
   }
-
-  return main_helper.error_response(res, "Error while validate user");
 }
 
 // logic of logging in
@@ -49,7 +65,6 @@ async function login_account(req, res) {
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
     }
-
     let account_saved = await save_account(
       address,
       type_id,
@@ -57,6 +72,7 @@ async function login_account(req, res) {
       "user",
       ""
     );
+    await account_auth.create({ address });
 
     if (account_saved.success) {
       return main_helper.success_response(res, account_saved);
