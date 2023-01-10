@@ -5,6 +5,7 @@ const account_types = require("../models/accounts/account_types");
 const verified_emails = require("../models/accounts/verified_emails");
 const main_helper = require("../helpers/index");
 const crypto = require("crypto");
+var nodemailer = require("nodemailer");
 
 // checking if account meta data already exists
 async function check_account_meta_exists(address) {
@@ -142,7 +143,30 @@ async function check_and_send_verification_email(address, email) {
     return verified;
   }
 }
-async function send_verification_mail() {}
+async function send_verification_mail(email, data) {
+  var transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.SENDER_EMAIL,
+      pass: process.env.SENDER_EMAIL_PASSWORD,
+    },
+  });
+
+  var mailOptions = {
+    from: process.env.SENDER_EMAIL,
+    to: email,
+    subject: "Sending Email using Node.js",
+    text: "That was easy!",
+  };
+
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Email sent: " + info.response);
+    }
+  });
+}
 async function send_mail() {}
 
 module.exports = {
@@ -152,4 +176,5 @@ module.exports = {
   generate_verification_code,
   check_email_verified,
   check_and_send_verification_email,
+  send_verification_mail,
 };
