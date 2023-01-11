@@ -40,6 +40,14 @@ account_auth.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, salt);
 });
 
+account_auth.pre("updateOne", function (next) {
+  let update = this.getUpdate();
+  if (!update.password) return next();
+  update.password = bcrypt.hashSync(update.password, 8);
+  this.update({}, update);
+  next();
+});
+
 account_auth.methods.match_password = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
