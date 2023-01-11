@@ -2,15 +2,18 @@ const express = require("express");
 const router = express();
 const baseController = require("../controllers/accounts_controller");
 const g2faController = require("../controllers/google_2fa_controller");
-// const validation = require("../middleware/validation_middleware");
+// const validation = require('../middleware/validation_middleware');
 
 const isAuthenticated = require("../middleware/isAuthenticated");
-
-router.use(isAuthenticated);
 
 router.post("/login", baseController.login_account);
 router.post("/update_profile", baseController.update_meta);
 router.post("/recovery/login", baseController.login_with_email);
+router.post(
+  "/update_profile_auth",
+  isAuthenticated,
+  baseController.update_auth_account_password,
+);
 
 // google 2 factore auth routes
 router.post("/otp/generate", g2faController.generate_OTP);

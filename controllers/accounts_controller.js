@@ -4,7 +4,6 @@ const account_auth = require("../models/accounts/account_auth");
 const account_types = require("../models/accounts/account_types");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
-const account_auth = require("../models/accounts/account_auth");
 
 const jwt = require("jsonwebtoken");
 
@@ -18,30 +17,26 @@ function index(name) {
 // login with email for account recovery
 async function login_with_email(req, res) {
   let { email, password } = req.body;
-
   const account = await account_meta.findOne({ email });
   if (!account) {
     return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
-  const account_auth = await account_auth.findOne({ address: account.address });
-
-  const passwordMatch = await account_auth.match_password(password);
-
-  if (!passwordMatch) {
-    return main_helper.error_response(res, "Incorrect password");
+  const found = await account_auth.findOne({ address: account.address });
+  console.log(found);
+  if (!found) {
+    return main_helper.error_response(res, "account not found");
+  }
+  if (found.password) {
+    const pass_match = await found.match_password(password);
+    if (!pass_match) return main_helper.error_response(res, "incorrect password");
+    const token = jwt.sign({ address: account.address, email: email }, "jwt_secret", {
+      expiresIn: "24h",
+    });
+    main_helper.success_response(res, { accessToke: token });
   }
 
-  const accessToken = jwt.sign({ address: account, address }, "jwt_secret", {
-    expiresIn: "24hm",
-  });
-
-  try {
-    let otp_enabled = account.otp_enabled;
-    return main_helper.success_response(res, otp_enabled, accessToken);
-  } catch (e) {
-    return main_helper.error_response(res, "Error while validate user");
-  }
+  main_helper.error_response(res, "no password found");
 }
 
 // logic of logging in
@@ -94,8 +89,7 @@ async function update_meta(req, res) {
     if (!account_exists.success) {
       return main_helper.error_response(res, account_exists);
     }
-
-    if (account_meta_exists.message == true) {
+    if (account_meta_exists.message) {
       let account_updated = await update_account_meta(
         address,
         name,
@@ -129,6 +123,23 @@ async function update_meta(req, res) {
   } catch (e) {
     return main_helper.error_response(res, main_helper.error_message(e.message));
   }
+}
+
+async function update_auth_account_password(req, res) {
+  const { currentPassword, newPassword, address } = req.body;
+
+  account_auth.findOne({ address }, async function (err, user) {
+    if (err) {
+      await account_auth.create({ address, password: newPassword });
+      return main_helper.success_response(res, "created");
+    }
+    if (user.password) {
+      const pass_match = await user.match_password(currentPassword);
+      if (!pass_match) return main_helper.error_response(res, "incorrect password");
+    }
+    await use.updateOne({ password: newPassword });
+    return main_helper.success_response(res, "password updated");
+  });
 }
 
 // saving already checked profile meta data
@@ -222,4 +233,5 @@ module.exports = {
   login_account,
   login_with_email,
   update_meta,
+  update_auth_account_password,
 };
