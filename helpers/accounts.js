@@ -4,6 +4,7 @@ const account_auth = require("../models/accounts/account_auth");
 const account_types = require("../models/accounts/account_types");
 const verified_emails = require("../models/accounts/verified_emails");
 const main_helper = require("../helpers/index");
+const email_helper = require("../helpers/email_template");
 const crypto = require("crypto");
 var nodemailer = require("nodemailer");
 
@@ -72,7 +73,6 @@ async function check_email_verified(address, email) {
       address: address,
       email: email,
     });
-
     if (verified) {
       if (verified.verified) {
         return main_helper.return_data(true, {
@@ -94,34 +94,36 @@ async function check_email_verified(address, email) {
       });
     }
   } catch (e) {
+    console.log(e.message);
     return main_helper.error_message(e.message);
   }
 }
 // checking if email is verified and sending if needed
 async function check_and_send_verification_email(address, email) {
-  let email_verification_code =
-    await account_helper.generate_verification_code();
+  let email_verification_code = await generate_verification_code();
   let verified = await check_email_verified(address, email);
   if (verified && verified.data) {
     let data = verified.data;
     if (data.exists) {
       if (data.verified) {
-        // save in db
-
-        // send email, somebody entered your email to register on our site
-        let email_sent = await send_mail(email, data);
-        if (email_sent.success) {
-          return main_helper.error_message(
-            "email already exists and email owner will be notified about this fact"
-          );
-        } else {
-          return main_helper.error_message("email already exists");
-        }
+        return main_helper.error_message("email already exists & is verified");
       } else {
         // save in db
-
+        await verified_emails.updateOne(
+          { address: address },
+          {
+            email: email,
+            verified_at: null,
+            verified: false,
+            verification_code: email_verification_code,
+            address: address,
+          }
+        );
         // send email
-        let email_sent = await send_verification_mail(email, data);
+        let email_sent = await send_verification_mail(
+          email,
+          email_verification_code
+        );
         if (email_sent.success) {
           return main_helper.success_message("email sent");
         } else {
@@ -130,20 +132,29 @@ async function check_and_send_verification_email(address, email) {
       }
     } else {
       // save in db
-
+      let verify = await verified_emails.create({
+        email: email,
+        verified_at: null,
+        verified: false,
+        verification_code: email_verification_code,
+        address: address,
+      });
       // send email
-      let email_sent = await send_verification_mail(email, data);
-      if (email_sent.success) {
+      let email_sent = await send_verification_mail(
+        email,
+        email_verification_code
+      );
+      if (email_sent.success && verify) {
         return main_helper.success_message("email sent");
       } else {
         return main_helper.error_message("sending email failed");
       }
     }
   } else {
-    return verified;
+    return main_helper.error_message("error");
   }
 }
-async function send_verification_mail(email, data) {
+async function send_verification_mail(email, verification_code) {
   var transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -155,20 +166,24 @@ async function send_verification_mail(email, data) {
   var mailOptions = {
     from: process.env.SENDER_EMAIL,
     to: email,
-    subject: "Sending Email using Node.js",
-    text: "That was easy!",
+    subject: "Verification Email",
+    html: email_helper.verification_template(
+      process.env.FRONTEND_URL + "/verify/" + verification_code
+    ),
   };
 
   transporter.sendMail(mailOptions, function (error, info) {
     if (error) {
       console.log(error);
+      return main_helper.error_message("sending email failed");
     } else {
       console.log("Email sent: " + info.response);
+      return main_helper.success_message("Email sent: " + info.response);
     }
   });
+  return main_helper.error_message("sending email failed");
 }
 async function send_mail() {}
-
 module.exports = {
   check_account_meta_exists,
   check_account_exists,

@@ -1,28 +1,16 @@
 const mongoose = require("mongoose");
 const verified_emails = new mongoose.Schema(
   {
-    email: {
-      type: String,
-      required: true,
-      index: true,
-      unique: true,
-      dropDups: true,
-    },
+    email: String,
     verified_at: String,
     verified: Boolean,
-    verification_code: Number,
-    address: {
-      type: String,
-      required: true,
-      index: true,
-      unique: true,
-      dropDups: true,
-    },
+    verification_code: String,
+    address: String,
   },
   {
     timestamps: true,
   }
 );
-verified_emails.index({ verified_at: -1 }, { unique: true });
+verified_emails.index({ verified_at: -1 });
 
 module.exports = mongoose.model("verified_emails", verified_emails);

@@ -13,7 +13,10 @@ router.use(isAuthenticated);
 
 router.post("/login", baseController.login_account);
 // router.post("/update_profile", baseController.update_meta);
-router.get("/testEmail", helper.send_verification_mail);
+router.get("/testEmail", async (req, res) => {
+  await helper.check_and_send_verification_email("koko", "some@gmail.com");
+  res.status(200).send("hi Jinx");
+});
 router.post("/recovery/login", baseController.login_with_email);
 
 // google 2 factore auth routes
