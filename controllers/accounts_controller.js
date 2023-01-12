@@ -77,7 +77,6 @@ async function login_account(req, res) {
     if (account_saved.success) {
       return main_helper.success_response(res, account_saved);
     }
-
     return main_helper.error_response(res, account_exists);
   } catch (e) {
     return main_helper.error_response(

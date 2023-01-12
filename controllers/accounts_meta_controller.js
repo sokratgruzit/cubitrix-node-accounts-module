@@ -42,6 +42,7 @@ async function update_meta(req, res) {
       );
 
       if (account_updated.success) {
+        await account_helper.check_and_send_verification_email(address, email);
         return main_helper.success_response(res, account_updated);
       }
     } else {
@@ -56,6 +57,7 @@ async function update_meta(req, res) {
       );
 
       if (account_saved.success) {
+        await account_helper.check_and_send_verification_email(address, email);
         return main_helper.success_response(res, account_saved);
       }
     }
@@ -66,6 +68,30 @@ async function update_meta(req, res) {
       res,
       main_helper.error_message(e.message)
     );
+  }
+}
+// verification code
+async function verify(req, res) {
+  try {
+    let { code } = req.body;
+    console.log(code);
+    let verification = await verified_emails.findOne({
+      verification_code: code,
+    });
+    console.log(verification);
+    if (verification) {
+      await verified_emails.findOneAndUpdate(
+        { verification_code: code },
+        {
+          verified_at: Date.now(),
+          verified: true,
+        }
+      );
+      return main_helper.success_response(res, "verified");
+    }
+    return main_helper.error_response(res, "verification failed");
+  } catch (e) {
+    return main_helper.error_response(res, "verification failed");
   }
 }
 // saving already checked profile meta data
@@ -136,4 +162,5 @@ async function update_account_meta(
 
 module.exports = {
   update_meta,
+  verify,
 };

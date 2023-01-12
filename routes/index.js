@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express();
-const baseController = require("../controllers/accounts_controller");
+const account_controller = require("../controllers/accounts_controller");
+const account_meta_controller = require("../controllers/accounts_meta_controller");
 const helper = require("../helpers/accounts");
 // const validation = require('../middleware/validation_middleware');
 
@@ -11,13 +12,15 @@ const isAuthenticated = require("../middleware/isAuthenticated");
 
 router.use(isAuthenticated);
 
-router.post("/login", baseController.login_account);
-// router.post("/update_profile", baseController.update_meta);
+router.post("/login", account_controller.login_account);
+router.post("/update_profile", account_meta_controller.update_meta);
+router.post("/verify", account_meta_controller.verify);
 router.get("/testEmail", async (req, res) => {
   await helper.check_and_send_verification_email("koko", "some@gmail.com");
   res.status(200).send("hi Jinx");
 });
-router.post("/recovery/login", baseController.login_with_email);
+
+router.post("/recovery/login", account_controller.login_with_email);
 
 // google 2 factore auth routes
 router.post("/otp/generate", g2faController.generate_OTP);
