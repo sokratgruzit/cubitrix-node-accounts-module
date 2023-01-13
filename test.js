@@ -26,9 +26,11 @@ app.use("/accounts", router);
 const root = require("path").join(__dirname, "front", "build");
 app.use(express.static(root));
 
-app.get("*", function (req, res) {
-  res.sendFile("index.html", { root });
-});
+// app.get("*", function (req, res) {
+//    res.sendFile(
+//       'index.html', { root }
+//    );
+// });
 
 async function start() {
   const PORT = process.env.PORT || 5000;
