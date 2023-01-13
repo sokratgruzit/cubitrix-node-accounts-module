@@ -14,7 +14,6 @@ async function check_account_meta_exists(address) {
     let find_meta = await account_meta.findOne({
       address: address,
     });
-
     if (find_meta) {
       return main_helper.success_message(true);
     }

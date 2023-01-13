@@ -25,11 +25,10 @@ async function update_meta(req, res) {
     let account_meta_exists = await account_helper.check_account_meta_exists(
       address
     );
-
     if (!account_exists.success) {
       return main_helper.error_response(res, account_exists);
     }
-
+    console.log(account_exists, account_meta_exists);
     if (account_meta_exists.message == true) {
       let account_updated = await update_account_meta(
         address,
@@ -40,6 +39,7 @@ async function update_meta(req, res) {
         nationality,
         avatar
       );
+      console.log(account_updated);
 
       if (account_updated.success) {
         await account_helper.check_and_send_verification_email(address, email);
@@ -87,6 +87,11 @@ async function verify(req, res) {
           verified: true,
         }
       );
+      await account_meta.findOneAndUpdate(
+        { address: verification.address },
+        { email: verification.email }
+      );
+
       return main_helper.success_response(res, "verified");
     }
     return main_helper.error_response(res, "verification failed");
@@ -108,7 +113,6 @@ async function save_account_meta(
     let data = {
       address: address,
       name: name,
-      email: email,
       mobile: mobile,
       date_of_birth: new Date(date_of_birth),
       nationality: nationality,
@@ -134,12 +138,9 @@ async function update_account_meta(
   avatar
 ) {
   try {
-    let email_verification_code =
-      await account_helper.generate_verification_code();
     let data = {
       address: address,
       name: name,
-      email: email,
       mobile: mobile,
       date_of_birth: new Date(date_of_birth),
       nationality: nationality,
@@ -147,7 +148,7 @@ async function update_account_meta(
     };
     let user = await account_meta.findOne({ address: address });
     if (email != user.email) {
-      data.email_verified_at = new Date.now();
+      data.email_verified_at = null;
     }
     let save_user = await account_meta.findOneAndUpdate(data);
     if (save_user) {
