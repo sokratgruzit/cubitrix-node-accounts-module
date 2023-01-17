@@ -28,7 +28,6 @@ async function update_meta(req, res) {
     if (!account_exists.success) {
       return main_helper.error_response(res, account_exists);
     }
-    console.log(account_exists, account_meta_exists);
     if (account_meta_exists.message == true) {
       let account_updated = await update_account_meta(
         address,
@@ -39,8 +38,6 @@ async function update_meta(req, res) {
         nationality,
         avatar
       );
-      console.log(account_updated);
-
       if (account_updated.success) {
         await account_helper.check_and_send_verification_email(address, email);
         return main_helper.success_response(res, account_updated);
@@ -74,11 +71,9 @@ async function update_meta(req, res) {
 async function verify(req, res) {
   try {
     let { code } = req.body;
-    console.log(code);
     let verification = await verified_emails.findOne({
       verification_code: code,
     });
-    console.log(verification);
     if (verification) {
       await verified_emails.findOneAndUpdate(
         { verification_code: code },
@@ -150,7 +145,7 @@ async function update_account_meta(
     if (email != user.email) {
       data.email_verified_at = null;
     }
-    let save_user = await account_meta.findOneAndUpdate(data);
+    let save_user = await account_meta.findOneAndUpdate({ address }, { data });
     if (save_user) {
       return main_helper.success_message({ save_user });
     }

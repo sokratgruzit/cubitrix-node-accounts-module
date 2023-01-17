@@ -11,6 +11,7 @@ function success_message(message) {
     message: message,
   };
 }
+
 function return_data(status, data) {
   return {
     success: status,

@@ -68,20 +68,21 @@ async function generate_verification_code() {
 // method to check if email already verified in db
 async function check_email_verified(address, email) {
   try {
-    let verified = await verified_emails.findOne({
-      address: address,
+    let verified_all = await verified_emails.find({
       email: email,
     });
-    if (verified) {
-      if (verified.verified) {
-        return main_helper.return_data(true, {
-          verified: true,
-          exists: true,
-          data: verified,
-        });
+    let verified_status = false;
+    let verified = null;
+    for (let i = 0; i < verified_all.length; i++) {
+      let verified_one = verified_all[i];
+      if (verified_one.verified) {
+        verified_status = true;
+        verified = verified_one;
       }
+    }
+    if (verified) {
       return main_helper.return_data(true, {
-        verified: false,
+        verified: verified_status,
         exists: true,
         data: verified,
       });
@@ -153,6 +154,7 @@ async function check_and_send_verification_email(address, email) {
     return main_helper.error_message("error");
   }
 }
+
 async function send_verification_mail(email, verification_code) {
   var transporter = nodemailer.createTransport({
     service: "gmail",
