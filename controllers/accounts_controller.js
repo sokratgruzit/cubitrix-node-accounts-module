@@ -1,11 +1,10 @@
 const accounts = require("../models/accounts/accounts");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
-
-const account_meta = require("../models/accounts/account_meta");
+const verified_emails = require("../models/accounts/verified_emails");
 const account_auth = require("../models/accounts/account_auth");
-
 const jwt = require("jsonwebtoken");
+const account_meta = require("../models/accounts/account_meta");
 
 require("dotenv").config();
 
@@ -79,7 +78,16 @@ async function login_account(req, res) {
       "user",
       ""
     );
-    await account_auth.create({ address });
+    let account_meta_data = await account_meta.findOne({ address: address });
+    if (account_meta_data && account_meta_data.email) {
+      let verified = await verified_emails.findOne({
+        address: address,
+        email: account_meta_data.email,
+      });
+      if (verified && verified.verified) {
+        await account_auth.create({ address });
+      }
+    }
 
     if (account_saved.success) {
       return main_helper.success_response(res, account_saved);
@@ -121,20 +129,30 @@ async function save_account(
 
 async function update_auth_account_password(req, res) {
   const { currentPassword, newPassword, address } = req.body;
-
-  account_auth.findOne({ address }, async function (err, user) {
-    if (err) {
-      await account_auth.create({ address, password: newPassword });
-      return main_helper.success_response(res, "created");
+  let account_meta_data = await account_meta.findOne({ address: address });
+  if (account_meta_data && account_meta_data.email) {
+    let verified = await verified_emails.findOne({
+      address: address,
+      email: account_meta_data.email,
+    });
+    if (verified && verified.verified) {
+      account_auth.findOne({ address }, async function (err, user) {
+        if (err) {
+          await account_auth.create({ address, password: newPassword });
+          return main_helper.success_response(res, "created");
+        }
+        if (user.password) {
+          const pass_match = await user.match_password(currentPassword);
+          if (!pass_match)
+            return main_helper.error_response(res, "incorrect password");
+        }
+        await user.updateOne({ password: newPassword });
+        return main_helper.success_response(res, "password updated");
+      });
     }
-    if (user.password) {
-      const pass_match = await user.match_password(currentPassword);
-      if (!pass_match)
-        return main_helper.error_response(res, "incorrect password");
-    }
-    await user.updateOne({ password: newPassword });
-    return main_helper.success_response(res, "password updated");
-  });
+  } else {
+    return main_helper.error_response(res, "please verify email");
+  }
 }
 
 module.exports = {
