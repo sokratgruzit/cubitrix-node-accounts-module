@@ -11,7 +11,6 @@ const account_meta = new mongoose.Schema(
     },
     name: String,
     email: String,
-    email_verified_at: Date,
     status: String,
     mobile: Number,
     date_of_birth: Date,

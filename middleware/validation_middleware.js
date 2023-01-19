@@ -4,13 +4,13 @@ const profile = async (req, res, next) => {
     const validationRule = {
         address: "profile_model|exist:profile_model,address", 
         name: "required|string", 
-        email:"required|email|exist:User,email", 
-        wallet_type:"required", 
-        mobile:"required", 
-        date_of_birth:"required|string", 
-        nationality:"required", 
-        avatar:"required" 
-    }
+        email: "required|email|exist:User,email", 
+        wallet_type: "required", 
+        mobile: "required", 
+        date_of_birth: "required|string", 
+        nationality: "required", 
+        avatar: "required" 
+    };
 
     await validator(req.body, validationRule, {}, (err, status) => {
         if (!status) {
@@ -23,8 +23,8 @@ const profile = async (req, res, next) => {
         } else {
             next();
         }
-    }).catch(err => console.log(err))
-}
+    }).catch(err => console.log(err));
+};
 
 module.exports = {
     profile
