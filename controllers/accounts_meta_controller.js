@@ -87,11 +87,17 @@ async function verify(req, res) {
         { email: verification.email }
       );
 
-      return main_helper.success_response(res, "verified");
+      return main_helper.success_response(res, {
+        success: true,
+      });
     }
-    return main_helper.error_response(res, "verification failed");
+    return main_helper.error_response(res, {
+      success: false,
+    });
   } catch (e) {
-    return main_helper.error_response(res, "verification failed");
+    return main_helper.error_response(res, {
+      success: false,
+    });
   }
 }
 // saving already checked profile meta data
