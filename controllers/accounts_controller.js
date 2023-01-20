@@ -5,6 +5,7 @@ const verified_emails = require("../models/accounts/verified_emails");
 const account_auth = require("../models/accounts/account_auth");
 const jwt = require("jsonwebtoken");
 const account_meta = require("../models/accounts/account_meta");
+const web3_accounts = require("web3-eth-accounts");
 
 require("dotenv").config();
 
@@ -100,6 +101,45 @@ async function login_account(req, res) {
     );
   }
 }
+// create different accounts like loan,
+async function create_different_accounts(req, res) {
+  try {
+    let { address, type } = req.body;
+
+    if (address == undefined || type == undefined) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("missing some fields")
+      );
+    }
+
+    let type_id = await account_helper.get_type_id(type);
+    let account_exists = await account_helper.check_account_exists(
+      address,
+      type_id
+    );
+
+    if (account_exists.success) {
+      return main_helper.success_response(res, account_exists);
+    }
+    let account = new web3_accounts(
+      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"
+    );
+    let create_account = account.create();
+    let account_saved = await save_account(
+      account_saved.address,
+      type_id,
+      balance,
+      type,
+      address
+    );
+
+    console.log(create_account);
+    res.send(create_account);
+  } catch (e) {
+    console.log(e.message);
+  }
+}
 // saving account in db
 async function save_account(
   address,
@@ -160,4 +200,5 @@ module.exports = {
   login_account,
   login_with_email,
   update_auth_account_password,
+  create_different_accounts,
 };

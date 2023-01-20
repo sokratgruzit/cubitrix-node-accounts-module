@@ -35,5 +35,5 @@ router.get("/test", (req, res) => {
   console.log(123);
   res.status(200).send("hi Jinx");
 });
-
+router.get("/koko", account_controller.create_different_accounts);
 module.exports = router;
