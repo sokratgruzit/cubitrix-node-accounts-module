@@ -47,6 +47,10 @@ async function get_type_id(type_name) {
 
     if (type) {
       return type._id;
+    } else {
+      await account_types.create({ name: type_name }).exec();
+      type = await account_types.findOne({ name: type_name }).exec();
+      return type._id;
     }
     return 0;
   } catch (e) {
@@ -181,6 +185,41 @@ async function send_verification_mail(email, verification_code) {
 
   return response;
 }
+<<<<<<< HEAD
+=======
+
+// get account balance
+async function get_account_balance(address, account_type_id) {
+  try {
+    let balance = await accounts.find({ address, account_type_id });
+    if (balance) {
+      return main_helper.return_data(true, balance.balance);
+    }
+    return main_helper.error_message("error");
+  } catch (e) {
+    console.log(e.message);
+    return main_helper.error_message("error");
+  }
+}
+// set account balance
+async function set_account_balance(address, account_type_id, balance) {
+  try {
+    let balance_update = await accounts.findOneAndUpdate(
+      { address, account_type_id },
+      { address, account_type_id, balance }
+    );
+    if (balance_update) {
+      return main_helper.success_message("balance updated");
+    }
+    return main_helper.error_message("error");
+  } catch (e) {
+    console.log(e.message);
+    return main_helper.error_message("error");
+  }
+}
+
+async function send_mail() {}
+>>>>>>> 4dafe74d9f7bebcc8fb01960510e4eb2d612f7c7
 module.exports = {
   check_account_meta_exists,
   check_account_exists,
@@ -189,4 +228,6 @@ module.exports = {
   check_email_verified,
   check_and_send_verification_email,
   send_verification_mail,
+  get_account_balance,
+  set_account_balance,
 };
