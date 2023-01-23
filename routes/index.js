@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express();
+const admin_account_controller = require("../controllers/admin/accouts_controller");
 const account_controller = require("../controllers/accounts_controller");
 const account_meta_controller = require("../controllers/accounts_meta_controller");
 const helper = require("../helpers/accounts");
@@ -36,4 +37,7 @@ router.get("/test", (req, res) => {
   res.status(200).send("hi Jinx");
 });
 router.get("/koko", account_controller.create_different_accounts);
+
+//get all accaunt
+router.get("/all-accaunt", admin_account_controller.get_accounts);
 module.exports = router;
