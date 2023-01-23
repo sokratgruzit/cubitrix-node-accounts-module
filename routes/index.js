@@ -39,5 +39,5 @@ router.get("/test", (req, res) => {
 router.get("/koko", account_controller.create_different_accounts);
 
 //get all accaunt
-router.get("/all-accaunt", admin_account_controller.get_accounts);
+router.get("/all_accaunt", admin_account_controller.get_accounts);
 module.exports = router;

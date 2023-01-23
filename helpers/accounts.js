@@ -47,6 +47,10 @@ async function get_type_id(type_name) {
 
     if (type) {
       return type._id;
+    } else {
+      await account_types.create({ name: type_name }).exec();
+      type = await account_types.findOne({ name: type_name }).exec();
+      return type._id;
     }
     return 0;
   } catch (e) {
@@ -184,6 +188,12 @@ async function send_verification_mail(email, verification_code) {
   });
   return main_helper.error_message("sending email failed");
 }
+
+// get account balance
+async function get_account_balance(address) {}
+// set account balance
+async function set_account_balance(address, amount) {}
+
 async function send_mail() {}
 module.exports = {
   check_account_meta_exists,
@@ -193,4 +203,6 @@ module.exports = {
   check_email_verified,
   check_and_send_verification_email,
   send_verification_mail,
+  get_account_balance,
+  set_account_balance,
 };
