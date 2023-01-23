@@ -22,6 +22,7 @@ router.post("/verify", account_meta_controller.verify);
 
 router.post("/recovery/login", account_controller.login_with_email);
 router.post("/update_profile_auth", account_controller.update_auth_account_password);
+router.post("/get_account", account_controller.get_account);
 
 // google 2 factore auth routes
 router.post("/otp/generate", g2faController.generate_OTP);

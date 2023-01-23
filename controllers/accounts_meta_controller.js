@@ -16,32 +16,45 @@ async function update_meta(req, res) {
       );
     }
 
-    let account_meta_exists = await account_meta.findOne({ address });
-    if (account_meta_exists) {
-      let account_updated = await account_meta_exists.updateOne({
-        address,
-        name,
-        email,
-        mobile,
-        date_of_birth,
-        nationality,
-        avatar,
-      });
+    let account_meta_exists = await account_meta.findOne({
+      address,
+    });
 
-      if (account_updated) {
-        const response = await account_helper.check_and_send_verification_email(
+    if (account_meta_exists) {
+      if (account_meta_exists.email) {
+        let account_updated = await account_meta_exists.updateOne({
           address,
+          name,
           email,
-        );
-        return main_helper.success_response(res, response);
+          mobile,
+          date_of_birth,
+          nationality,
+          avatar,
+        });
+        return main_helper.success_response(res, "account updated");
+      } else {
+        let account_updated = await account_meta_exists.updateOne({
+          address,
+          name,
+          mobile,
+          date_of_birth,
+          nationality,
+          avatar,
+        });
+        if (account_updated) {
+          const response = await account_helper.check_and_send_verification_email(
+            address,
+            email,
+          );
+          return main_helper.success_response(res, response);
+        }
       }
     } else {
       let account_saved = await save_account_meta(
         address,
         name,
-        email,
         mobile,
-        date_of_birth,
+        new Date(date_of_birth),
         nationality,
         avatar,
       );
@@ -67,6 +80,7 @@ async function verify(req, res) {
     let verification = await verified_emails.findOne({
       verification_code: code,
     });
+
     if (verification) {
       await verified_emails.findOneAndUpdate(
         { verification_code: code },
@@ -75,6 +89,10 @@ async function verify(req, res) {
           verified: true,
         },
       );
+      await verified_emails.deleteMany({
+        address: verification.address,
+        verified: false,
+      });
       await account_meta.findOneAndUpdate(
         { address: verification.address },
         { email: verification.email },
@@ -97,7 +115,6 @@ async function verify(req, res) {
 async function save_account_meta(
   address,
   name,
-  email,
   mobile,
   date_of_birth,
   nationality,

@@ -34,16 +34,14 @@ app.use(express.static(root));
 // });
 
 async function start() {
-  const PORT = process.env.PORT || 5000;
+  const PORT = process.env.PORT || 4000;
   try {
     mongoose.set("strictQuery", false);
     await mongoose.connect(process.env.MONGO_URL, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    app.listen(PORT, () =>
-      console.log(`App has been started on port ${PORT}...`)
-    );
+    app.listen(PORT, () => console.log(`App has been started on port ${PORT}...`));
   } catch (e) {
     console.log(`Server Error ${e.message}`);
     process.exit(1);

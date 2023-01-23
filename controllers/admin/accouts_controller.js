@@ -5,24 +5,28 @@ require("dotenv").config();
 
 async function get_accounts(req, res) {
   try {
-    let results = await accaunts.aggregate([{
-      $lookup: {
-        from: 'account_metas',
-        localField: 'address',
-        foreignField: 'address',
-        as: 'meta'
-      }
-    }])
+    let results = await accaunts.aggregate([
+      {
+        $lookup: {
+          from: "account_metas",
+          localField: "address",
+          foreignField: "address",
+          as: "meta",
+        },
+      },
+    ]);
     results = await accaunts.populate(results, {
-      path: 'account_type_id'
+      path: "account_type_id",
     });
-    
-    res.status(200).json(main_helper.return_data({
-      status: true,
-      data: { accounts: results }
-    }));
+
+    res.status(200).json(
+      main_helper.return_data({
+        status: true,
+        data: { accounts: results },
+      }),
+    );
   } catch (e) {
-    console.log(e)
+    console.log(e);
     return main_helper.error_response(res, "error getting accounts");
   }
 }

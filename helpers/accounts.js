@@ -69,23 +69,32 @@ async function generate_verification_code() {
 async function check_email_verified(address) {
   try {
     let verified_all = await verified_emails.find({
-      email: email,
+      address,
     });
-    let verified_status = false;
-    let verified = null;
-    for (let i = 0; i < verified_all.length; i++) {
-      let verified_one = verified_all[i];
-      if (verified_one.verified) {
-        verified_status = true;
-        verified = verified_one;
+
+    if (verified_all.length > 0) {
+      let verified_status = false;
+      let verified = null;
+      for (let i = 0; i < verified_all.length; i++) {
+        let verified_one = verified_all[i];
+        if (verified_one.verified) {
+          verified_status = true;
+          verified = verified_one;
+        }
       }
-    }
-    if (verified) {
-      return main_helper.return_data(true, {
-        verified: verified_status,
-        exists: true,
-        data: verified,
-      });
+      if (verified) {
+        return main_helper.return_data(true, {
+          verified: verified_status,
+          exists: true,
+          data: verified,
+        });
+      } else {
+        return main_helper.return_data(true, {
+          verified: false,
+          exists: true,
+          data: null,
+        });
+      }
     } else {
       return main_helper.return_data(true, {
         verified: false,
@@ -101,7 +110,7 @@ async function check_email_verified(address) {
 // checking if email is verified and sending if needed
 async function check_and_send_verification_email(address, email) {
   let email_verification_code = await generate_verification_code();
-  let verified = await check_email_verified(address);
+  let verified = await check_email_verified(address, email);
   if (verified && verified.data) {
     let data = verified.data;
     if (data.exists) {
@@ -109,16 +118,13 @@ async function check_and_send_verification_email(address, email) {
         return main_helper.error_message("email already exists & is verified");
       } else {
         // save in db
-        await verified_emails.updateOne(
-          { address: address },
-          {
-            email: email,
-            verified_at: null,
-            verified: false,
-            verification_code: email_verification_code,
-            address: address,
-          },
-        );
+        let verify = await verified_emails.create({
+          email: email,
+          verified_at: null,
+          verified: false,
+          verification_code: email_verification_code,
+          address: address,
+        });
         // send email
         let email_sent = await send_verification_mail(email, email_verification_code);
         if (email_sent.success) {
@@ -175,7 +181,6 @@ async function send_verification_mail(email, verification_code) {
 
   return response;
 }
-async function send_mail() {}
 module.exports = {
   check_account_meta_exists,
   check_account_exists,
