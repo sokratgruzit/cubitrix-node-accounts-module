@@ -190,9 +190,34 @@ async function send_verification_mail(email, verification_code) {
 }
 
 // get account balance
-async function get_account_balance(address) {}
+async function get_account_balance(address, account_type_id) {
+  try {
+    let balance = await accounts.find({ address, account_type_id });
+    if (balance) {
+      return main_helper.return_data(true, balance.balance);
+    }
+    return main_helper.error_message("error");
+  } catch (e) {
+    console.log(e.message);
+    return main_helper.error_message("error");
+  }
+}
 // set account balance
-async function set_account_balance(address, amount) {}
+async function set_account_balance(address, account_type_id, balance) {
+  try {
+    let balance_update = await accounts.findOneAndUpdate(
+      { address, account_type_id },
+      { address, account_type_id, balance }
+    );
+    if (balance_update) {
+      return main_helper.success_message("balance updated");
+    }
+    return main_helper.error_message("error");
+  } catch (e) {
+    console.log(e.message);
+    return main_helper.error_message("error");
+  }
+}
 
 async function send_mail() {}
 module.exports = {
