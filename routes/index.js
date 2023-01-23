@@ -20,10 +20,7 @@ router.post("/update_profile", account_meta_controller.update_meta);
 router.post("/verify", account_meta_controller.verify);
 
 router.post("/recovery/login", account_controller.login_with_email);
-router.post(
-  "/update_profile_auth",
-  account_controller.update_auth_account_password
-);
+router.post("/update_profile_auth", account_controller.update_auth_account_password);
 
 // google 2 factore auth routes
 router.post("/otp/generate", g2faController.generate_OTP);

@@ -66,11 +66,10 @@ async function generate_verification_code() {
   }
 }
 // method to check if email already verified in db
-async function check_email_verified(address, email) {
+async function check_email_verified(address) {
   try {
     let verified = await verified_emails.findOne({
       address: address,
-      email: email,
     });
     if (verified) {
       if (verified.verified) {
@@ -100,11 +99,11 @@ async function check_email_verified(address, email) {
 // checking if email is verified and sending if needed
 async function check_and_send_verification_email(address, email) {
   let email_verification_code = await generate_verification_code();
-  let verified = await check_email_verified(address, email);
+  let verified = await check_email_verified(address);
   if (verified && verified.data) {
     let data = verified.data;
     if (data.exists) {
-      if (data.verified) {
+      if (data.verified && email === data?.data?.email) {
         return main_helper.error_message("email already exists & is verified");
       } else {
         // save in db
@@ -116,13 +115,10 @@ async function check_and_send_verification_email(address, email) {
             verified: false,
             verification_code: email_verification_code,
             address: address,
-          }
+          },
         );
         // send email
-        let email_sent = await send_verification_mail(
-          email,
-          email_verification_code
-        );
+        let email_sent = await send_verification_mail(email, email_verification_code);
         if (email_sent.success) {
           return main_helper.success_message("email sent");
         } else {
@@ -139,10 +135,7 @@ async function check_and_send_verification_email(address, email) {
         address: address,
       });
       // send email
-      let email_sent = await send_verification_mail(
-        email,
-        email_verification_code
-      );
+      let email_sent = await send_verification_mail(email, email_verification_code);
       if (email_sent.success && verify) {
         return main_helper.success_message("email sent");
       } else {
@@ -167,20 +160,17 @@ async function send_verification_mail(email, verification_code) {
     to: email,
     subject: "Verification Email",
     html: email_helper.verification_template(
-      process.env.FRONTEND_URL + "/verify/" + verification_code
+      process.env.FRONTEND_URL + "/verify/" + verification_code,
     ),
   };
 
-  transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log(error);
-      return main_helper.error_message("sending email failed");
-    } else {
-      console.log("Email sent: " + info.response);
-      return main_helper.success_message("Email sent: " + info.response);
-    }
+  let response;
+  await transporter.sendMail(mailOptions).catch((e) => {
+    response = main_helper.error_message("sending email failed");
   });
-  return main_helper.error_message("sending email failed");
+  response = main_helper.success_message("Email sent");
+
+  return response;
 }
 async function send_mail() {}
 module.exports = {
