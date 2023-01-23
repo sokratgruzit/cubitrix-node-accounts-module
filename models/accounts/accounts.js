@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const {Schema} = require('mongoose');
+const aggregatePaginate = require("mongoose-aggregate-paginate-v2");
+
 const accounts = new mongoose.Schema(
   {
     address: String,
@@ -12,4 +14,5 @@ const accounts = new mongoose.Schema(
     timestamps: true,
   }
 );
+accounts.plugin(aggregatePaginate);
 module.exports = mongoose.model("accounts", accounts);
