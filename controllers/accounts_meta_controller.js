@@ -21,8 +21,8 @@ async function update_meta(req, res) {
     });
 
     if (account_meta_exists) {
-      if (account_meta_exists.email) {
-        let account_updated = await account_meta_exists.updateOne({
+      if (account_meta_exists.email && account_meta_exists?.email === email) {
+        await account_meta_exists.updateOne({
           address,
           name,
           email,
@@ -33,21 +33,33 @@ async function update_meta(req, res) {
         });
         return main_helper.success_response(res, "account updated");
       } else {
-        let account_updated = await account_meta_exists.updateOne({
-          address,
-          name,
-          mobile,
-          date_of_birth,
-          nationality,
-          avatar,
-        });
-        if (account_updated) {
-          const response = await account_helper.check_and_send_verification_email(
+        if (account_meta_exists.email && account_meta_exists?.email !== email) {
+          await verified_emails.deleteMany({ address });
+          await account_meta_exists.updateOne({
             address,
-            email,
-          );
-          return main_helper.success_response(res, response);
+            name,
+            mobile,
+            email: "",
+            date_of_birth,
+            nationality,
+            avatar,
+          });
+        } else {
+          await account_meta_exists.updateOne({
+            address,
+            name,
+            mobile,
+            date_of_birth,
+            nationality,
+            avatar,
+          });
         }
+
+        const response = await account_helper.check_and_send_verification_email(
+          address,
+          email,
+        );
+        return main_helper.success_response(res, response);
       }
     } else {
       let account_saved = await save_account_meta(
