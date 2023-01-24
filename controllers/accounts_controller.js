@@ -55,6 +55,10 @@ async function login_account(req, res) {
       );
     }
 
+    address = address.toLowerCase();
+
+    console.log(address);
+    
     let type_id = await account_helper.get_type_id("user_current");
     let account_exists = await account_helper.check_account_exists(address, type_id);
 

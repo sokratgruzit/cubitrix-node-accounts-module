@@ -1,5 +1,5 @@
-const roles = require("../../models/accounts/role");
-const main_helper = require("../../helpers/index");
+const roles = require("../models/accounts/role");
+const main_helper = require("../helpers/index");
 
 async function index(req, res) {
   try {
