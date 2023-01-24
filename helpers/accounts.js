@@ -185,8 +185,6 @@ async function send_verification_mail(email, verification_code) {
 
   return response;
 }
-<<<<<<< HEAD
-=======
 
 // get account balance
 async function get_account_balance(address, account_type_id) {
@@ -219,7 +217,6 @@ async function set_account_balance(address, account_type_id, balance) {
 }
 
 async function send_mail() {}
->>>>>>> 4dafe74d9f7bebcc8fb01960510e4eb2d612f7c7
 module.exports = {
   check_account_meta_exists,
   check_account_exists,
