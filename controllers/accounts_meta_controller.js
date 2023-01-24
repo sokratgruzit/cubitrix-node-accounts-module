@@ -7,64 +7,82 @@ require("dotenv").config();
 // logic of checking profile info
 async function update_meta(req, res) {
   try {
-    let { address, name, email, mobile, date_of_birth, nationality, avatar } =
-      req.body;
+    let { address, name, email, mobile, date_of_birth, nationality, avatar } = req.body;
 
     if (address == undefined) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields")
+        main_helper.error_message("Fill all fields"),
       );
     }
 
-    let type_id = await account_helper.get_type_id("user_current");
-    let account_exists = await account_helper.check_account_exists(
+    let account_meta_exists = await account_meta.findOne({
       address,
-      type_id
-    );
-    let account_meta_exists = await account_helper.check_account_meta_exists(
-      address
-    );
-    if (!account_exists.success) {
-      return main_helper.error_response(res, account_exists);
-    }
-    if (account_meta_exists.message == true) {
-      let account_updated = await update_account_meta(
-        address,
-        name,
-        email,
-        mobile,
-        date_of_birth,
-        nationality,
-        avatar
-      );
-      if (account_updated.success) {
-        await account_helper.check_and_send_verification_email(address, email);
-        return main_helper.success_response(res, account_updated);
+    });
+
+    if (account_meta_exists) {
+      if (account_meta_exists.email && account_meta_exists?.email === email) {
+        await account_meta_exists.updateOne({
+          address,
+          name,
+          email,
+          mobile,
+          date_of_birth,
+          nationality,
+          avatar,
+        });
+        return main_helper.success_response(res, "account updated");
+      } else {
+        if (account_meta_exists.email && account_meta_exists?.email !== email) {
+          await verified_emails.deleteMany({ address });
+          await account_meta_exists.updateOne({
+            address,
+            name,
+            mobile,
+            email: "",
+            date_of_birth,
+            nationality,
+            avatar,
+          });
+        } else {
+          await account_meta_exists.updateOne({
+            address,
+            name,
+            mobile,
+            date_of_birth,
+            nationality,
+            avatar,
+          });
+        }
+
+        const response = await account_helper.check_and_send_verification_email(
+          address,
+          email,
+        );
+        return main_helper.success_response(res, response);
       }
     } else {
       let account_saved = await save_account_meta(
         address,
         name,
-        email,
         mobile,
-        date_of_birth,
+        new Date(date_of_birth),
         nationality,
-        avatar
+        avatar,
       );
 
       if (account_saved.success) {
-        await account_helper.check_and_send_verification_email(address, email);
-        return main_helper.success_response(res, account_saved);
+        const response = await account_helper.check_and_send_verification_email(
+          address,
+          email,
+        );
+        return main_helper.success_response(res, response);
       }
     }
 
     return main_helper.error_response(res, "Error while saving");
   } catch (e) {
-    return main_helper.error_response(
-      res,
-      main_helper.error_message(e.message)
-    );
+    return main_helper.error_response(res, main_helper.error_message(e.message));
   }
 }
 // verification code
@@ -74,17 +92,22 @@ async function verify(req, res) {
     let verification = await verified_emails.findOne({
       verification_code: code,
     });
+
     if (verification) {
       await verified_emails.findOneAndUpdate(
         { verification_code: code },
         {
           verified_at: Date.now(),
           verified: true,
-        }
+        },
       );
+      await verified_emails.deleteMany({
+        address: verification.address,
+        verified: false,
+      });
       await account_meta.findOneAndUpdate(
         { address: verification.address },
-        { email: verification.email }
+        { email: verification.email },
       );
 
       return main_helper.success_response(res, {
@@ -104,11 +127,10 @@ async function verify(req, res) {
 async function save_account_meta(
   address,
   name,
-  email,
   mobile,
   date_of_birth,
   nationality,
-  avatar
+  avatar,
 ) {
   try {
     let data = {
@@ -124,39 +146,6 @@ async function save_account_meta(
       return main_helper.success_message("User meta saved");
     }
     return main_helper.error_message("Error while saving user meta");
-  } catch (e) {
-    return main_helper.error_message(e.message);
-  }
-}
-// saving already checked profile meta data
-async function update_account_meta(
-  address,
-  name,
-  email,
-  mobile,
-  date_of_birth,
-  nationality,
-  avatar
-) {
-  try {
-    let data = {
-      address: address,
-      name: name,
-      mobile: mobile,
-      date_of_birth: new Date(date_of_birth),
-      nationality: nationality,
-      avatar: avatar,
-    };
-    let user = await account_meta.findOne({ address: address });
-    if (email != user.email) {
-      data.email_verified_at = null;
-    }
-    let save_user = await account_meta.findOneAndUpdate({ address }, { data });
-    if (save_user) {
-      return main_helper.success_message({ save_user });
-    }
-
-    return main_helper.error_message("Error while updating user meta");
   } catch (e) {
     return main_helper.error_message(e.message);
   }

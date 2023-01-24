@@ -1,6 +1,6 @@
 {
-  "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.0.5",
+  "name": "@brilliant_emporium/accounts",
+  "version": "0.0.3",
   "description": "module for managing accounts data",
   "main": "app.js",
   "scripts": {
