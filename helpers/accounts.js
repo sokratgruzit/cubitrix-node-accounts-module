@@ -70,26 +70,35 @@ async function generate_verification_code() {
   }
 }
 // method to check if email already verified in db
-async function check_email_verified(address, email) {
+async function check_email_verified(address) {
   try {
     let verified_all = await verified_emails.find({
-      email: email,
+      address,
     });
-    let verified_status = false;
-    let verified = null;
-    for (let i = 0; i < verified_all.length; i++) {
-      let verified_one = verified_all[i];
-      if (verified_one.verified) {
-        verified_status = true;
-        verified = verified_one;
+
+    if (verified_all.length > 0) {
+      let verified_status = false;
+      let verified = null;
+      for (let i = 0; i < verified_all.length; i++) {
+        let verified_one = verified_all[i];
+        if (verified_one.verified) {
+          verified_status = true;
+          verified = verified_one;
+        }
       }
-    }
-    if (verified) {
-      return main_helper.return_data(true, {
-        verified: verified_status,
-        exists: true,
-        data: verified,
-      });
+      if (verified) {
+        return main_helper.return_data(true, {
+          verified: verified_status,
+          exists: true,
+          data: verified,
+        });
+      } else {
+        return main_helper.return_data(true, {
+          verified: false,
+          exists: true,
+          data: null,
+        });
+      }
     } else {
       return main_helper.return_data(true, {
         verified: false,
@@ -109,25 +118,19 @@ async function check_and_send_verification_email(address, email) {
   if (verified && verified.data) {
     let data = verified.data;
     if (data.exists) {
-      if (data.verified) {
+      if (data.verified && email === data?.data?.email) {
         return main_helper.error_message("email already exists & is verified");
       } else {
         // save in db
-        await verified_emails.updateOne(
-          { address: address },
-          {
-            email: email,
-            verified_at: null,
-            verified: false,
-            verification_code: email_verification_code,
-            address: address,
-          }
-        );
+        let verify = await verified_emails.create({
+          email: email,
+          verified_at: null,
+          verified: false,
+          verification_code: email_verification_code,
+          address: address,
+        });
         // send email
-        let email_sent = await send_verification_mail(
-          email,
-          email_verification_code
-        );
+        let email_sent = await send_verification_mail(email, email_verification_code);
         if (email_sent.success) {
           return main_helper.success_message("email sent");
         } else {
@@ -144,10 +147,7 @@ async function check_and_send_verification_email(address, email) {
         address: address,
       });
       // send email
-      let email_sent = await send_verification_mail(
-        email,
-        email_verification_code
-      );
+      let email_sent = await send_verification_mail(email, email_verification_code);
       if (email_sent.success && verify) {
         return main_helper.success_message("email sent");
       } else {
@@ -173,20 +173,17 @@ async function send_verification_mail(email, verification_code) {
     to: email,
     subject: "Verification Email",
     html: email_helper.verification_template(
-      process.env.FRONTEND_URL + "/verify/" + verification_code
+      process.env.FRONTEND_URL + "/verify/" + verification_code,
     ),
   };
 
-  transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log(error);
-      return main_helper.error_message("sending email failed");
-    } else {
-      console.log("Email sent: " + info.response);
-      return main_helper.success_message("Email sent: " + info.response);
-    }
+  let response;
+  await transporter.sendMail(mailOptions).catch((e) => {
+    response = main_helper.error_message("sending email failed");
   });
-  return main_helper.error_message("sending email failed");
+  response = main_helper.success_message("Email sent");
+
+  return response;
 }
 
 // get account balance
@@ -207,7 +204,7 @@ async function set_account_balance(address, account_type_id, balance) {
   try {
     let balance_update = await accounts.findOneAndUpdate(
       { address, account_type_id },
-      { address, account_type_id, balance }
+      { address, account_type_id, balance },
     );
     if (balance_update) {
       return main_helper.success_message("balance updated");
