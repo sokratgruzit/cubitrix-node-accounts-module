@@ -47,11 +47,12 @@ async function get_type_id(type_name) {
 
     if (type) {
       return type._id;
-    } else {
+    } 
+    /*else {
       await account_types.create({ name: type_name }).exec();
       type = await account_types.findOne({ name: type_name }).exec();
       return type._id;
-    }
+    }*/
     return 0;
   } catch (e) {
     return main_helper.error_message(e.message);

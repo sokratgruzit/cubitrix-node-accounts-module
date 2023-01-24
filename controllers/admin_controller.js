@@ -31,24 +31,61 @@ async function get_accounts(req, res) {
 
 async function handle_filter(req, res) {
   try {
-    let filtered;
-    const data = await req.body;
+    let result;
+    const req_body = await req.body;
+    const req_type = req_body.type;
+    let { type, ...data } = req_body;
     
     const account_type_id = await account_helper.get_type_id(data.account_type_id);
     
-    if (account_type_id) {
-      //data.account_type_id = account_type_id.toString();
-      console.log(data)
-    } else {
-      console.log('nehi', data);
+    if (data.search) {
+      data.search = data.search.toLowerCase();
     }
 
-    filtered = await accounts.find(data);
-    console.log(filtered);
+    if (data.address || (data.search && data.address)) {
+      let { search, ...without_search } = data;
+      data = without_search;
+      data.address = data.address.toLowerCase();
+    }
+
+    if (account_type_id) {
+      data.account_type_id = account_type_id.toString();
+    }
+    
+    if (!account_type_id) {
+      const { account_type_id, ...no_type_id } = data;
+      data = no_type_id;
+    }
+
+    if (req_type === "account") {
+      if (data.search) {
+        result = await accounts.find({ "address": { "$regex": data.search, "$options": "i" }});
+
+        if (result.length === 0) {
+          let q;
+
+          if ("user_current".includes(data.search)) q = "user_current";
+          
+          if ("loan".includes(data.search)) q = "loan";
+          
+          if ("staking".includes(data.search)) q = "staking";
+          
+          if ("trade".includes(data.search)) q = "trade";
+
+          let account_type = await account_helper.get_type_id(q);
+
+          result = await accounts.find({ account_type_id: account_type });
+        }
+      } else {
+        result = await accounts.find(data);
+      }
+    }
+
+    console.log(result);
 
     res.status(200).json(main_helper.return_data({
       status: true,
-      data: filtered
+      data: result
     }));
   } catch (e) {
     return main_helper.error_message(e);
