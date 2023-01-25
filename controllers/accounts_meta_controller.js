@@ -1,5 +1,4 @@
-const account_meta = require("../models/accounts/account_meta");
-const verified_emails = require("../models/accounts/verified_emails");
+const { account_meta, verified_emails } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 require("dotenv").config();
@@ -7,12 +6,13 @@ require("dotenv").config();
 // logic of checking profile info
 async function update_meta(req, res) {
   try {
-    let { address, name, email, mobile, date_of_birth, nationality, avatar } = req.body;
+    let { address, name, email, mobile, date_of_birth, nationality, avatar } =
+      req.body;
 
     if (address == undefined) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields"),
+        main_helper.error_message("Fill all fields")
       );
     }
 
@@ -57,7 +57,7 @@ async function update_meta(req, res) {
 
         const response = await account_helper.check_and_send_verification_email(
           address,
-          email,
+          email
         );
         return main_helper.success_response(res, response);
       }
@@ -68,13 +68,13 @@ async function update_meta(req, res) {
         mobile,
         new Date(date_of_birth),
         nationality,
-        avatar,
+        avatar
       );
 
       if (account_saved.success) {
         const response = await account_helper.check_and_send_verification_email(
           address,
-          email,
+          email
         );
         return main_helper.success_response(res, response);
       }
@@ -82,7 +82,10 @@ async function update_meta(req, res) {
 
     return main_helper.error_response(res, "Error while saving");
   } catch (e) {
-    return main_helper.error_response(res, main_helper.error_message(e.message));
+    return main_helper.error_response(
+      res,
+      main_helper.error_message(e.message)
+    );
   }
 }
 // verification code
@@ -99,7 +102,7 @@ async function verify(req, res) {
         {
           verified_at: Date.now(),
           verified: true,
-        },
+        }
       );
       await verified_emails.deleteMany({
         address: verification.address,
@@ -107,7 +110,7 @@ async function verify(req, res) {
       });
       await account_meta.findOneAndUpdate(
         { address: verification.address },
-        { email: verification.email },
+        { email: verification.email }
       );
 
       return main_helper.success_response(res, {
@@ -130,7 +133,7 @@ async function save_account_meta(
   mobile,
   date_of_birth,
   nationality,
-  avatar,
+  avatar
 ) {
   try {
     let data = {
