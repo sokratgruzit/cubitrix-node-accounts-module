@@ -1,4 +1,4 @@
-const { account_auth } = require("account_models_test");
+const { account_auth } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const speakeasy = require("speakeasy");
 

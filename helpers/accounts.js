@@ -3,7 +3,7 @@ const {
   account_meta,
   account_types,
   verified_emails,
-} = require("account_models_test");
+} = require("@cubitrix/models");
 
 const main_helper = require("../helpers/index");
 const email_helper = require("../helpers/email_template");

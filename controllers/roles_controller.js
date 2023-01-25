@@ -1,4 +1,4 @@
-const { role } = require("account_models_test");
+const { role } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 
 async function index(req, res) {

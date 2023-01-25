@@ -1,4 +1,4 @@
-const { accounts } = require("account_models_test");
+const { accounts } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 

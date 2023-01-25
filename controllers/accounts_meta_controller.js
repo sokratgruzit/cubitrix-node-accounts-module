@@ -1,4 +1,4 @@
-const { account_meta, verified_emails } = require("account_models_test");
+const { account_meta, verified_emails } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 require("dotenv").config();

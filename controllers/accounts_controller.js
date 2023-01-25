@@ -5,7 +5,7 @@ const {
   account_meta,
   account_auth,
   verified_emails,
-} = require("account_models_test");
+} = require("@cubitrix/models");
 const jwt = require("jsonwebtoken");
 const web3_accounts = require("web3-eth-accounts");
 
