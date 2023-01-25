@@ -1,12 +1,12 @@
-const roles = require("../models/accounts/role");
+const { role } = require("account_models_test");
 const main_helper = require("../helpers/index");
 
 async function index(req, res) {
   try {
-    let results = await roles.find();
+    let results = await role.find();
     console.log(results);
     if (!results.length) {
-      results = await roles.insertMany([
+      results = await role.insertMany([
         {
           value: "SUPER_ADMIN",
         },
@@ -27,7 +27,7 @@ async function index(req, res) {
     );
   } catch (e) {
     console.log(e);
-    return main_helper.error_response(res, "error getting roles");
+    return main_helper.error_response(res, "error getting role");
   }
 }
 module.exports = {

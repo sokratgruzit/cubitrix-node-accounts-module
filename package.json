@@ -1,6 +1,6 @@
 {
-  "name": "@brilliant_emporium/accounts",
-  "version": "0.0.3",
+  "name": "@cubitrix/cubitrix-node-accounts-module",
+  "version": "0.0.9",
   "description": "module for managing accounts data",
   "main": "app.js",
   "scripts": {
@@ -22,7 +22,8 @@
     "mongoose-slug-updater": "^3.3.0",
     "nodemailer": "^6.8.0",
     "speakeasy": "^2.0.0",
-    "web3-eth-accounts": "^1.8.1"
+    "web3-eth-accounts": "^1.8.1",
+    "account_models_test": "0.0.2"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"

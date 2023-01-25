@@ -1,4 +1,4 @@
-const accounts = require("../models/accounts/accounts");
+const { accounts } = require("account_models_test");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 
@@ -95,14 +95,14 @@ async function handle_filter(req, res) {
 
     console.log(result);
 
-    res.status(200).json(
+    return res.status(200).json(
       main_helper.return_data({
         status: true,
         data: result,
       })
     );
   } catch (e) {
-    return main_helper.error_message(e);
+    return main_helper.error_response(res, e.message);
   }
 }
 

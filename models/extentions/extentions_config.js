@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const extentions_config = new mongoose.Schema(
   {
     name: String,
-    data: Array
+    data: Array,
   },
   {
     timestamps: true,
