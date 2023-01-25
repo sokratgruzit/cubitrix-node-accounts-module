@@ -1,4 +1,4 @@
-const { accounts } = require("@cubitrix/models");
+const { accounts, transactions, account_meta } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 
@@ -90,6 +90,18 @@ async function handle_filter(req, res) {
         }
       } else {
         result = await accounts.find(data);
+      }
+    }
+    if (req_type === "transactions") {
+      if (data.search) {
+      } else {
+        result = await transactions.find(data);
+      }
+    }
+    if (req_type === "users") {
+      if (data.search) {
+      } else {
+        result = await account_meta.find(data);
       }
     }
 
