@@ -1,8 +1,10 @@
-const accounts = require("../models/accounts/accounts");
-const account_meta = require("../models/accounts/account_meta");
-const account_auth = require("../models/accounts/account_auth");
-const account_types = require("../models/accounts/account_types");
-const verified_emails = require("../models/accounts/verified_emails");
+const {
+  accounts,
+  account_meta,
+  account_types,
+  verified_emails,
+} = require("@cubitrix/models");
+
 const main_helper = require("../helpers/index");
 const email_helper = require("../helpers/email_template");
 const crypto = require("crypto");
@@ -47,11 +49,12 @@ async function get_type_id(type_name) {
 
     if (type) {
       return type._id;
-    } else {
+    }
+    /*else {
       await account_types.create({ name: type_name }).exec();
       type = await account_types.findOne({ name: type_name }).exec();
       return type._id;
-    }
+    }*/
     return 0;
   } catch (e) {
     return main_helper.error_message(e.message);
@@ -130,7 +133,10 @@ async function check_and_send_verification_email(address, email) {
           address: address,
         });
         // send email
-        let email_sent = await send_verification_mail(email, email_verification_code);
+        let email_sent = await send_verification_mail(
+          email,
+          email_verification_code
+        );
         if (email_sent.success) {
           return main_helper.success_message("email sent");
         } else {
@@ -147,7 +153,10 @@ async function check_and_send_verification_email(address, email) {
         address: address,
       });
       // send email
-      let email_sent = await send_verification_mail(email, email_verification_code);
+      let email_sent = await send_verification_mail(
+        email,
+        email_verification_code
+      );
       if (email_sent.success && verify) {
         return main_helper.success_message("email sent");
       } else {
@@ -173,7 +182,7 @@ async function send_verification_mail(email, verification_code) {
     to: email,
     subject: "Verification Email",
     html: email_helper.verification_template(
-      process.env.FRONTEND_URL + "/verify/" + verification_code,
+      process.env.FRONTEND_URL + "/verify/" + verification_code
     ),
   };
 
@@ -204,7 +213,7 @@ async function set_account_balance(address, account_type_id, balance) {
   try {
     let balance_update = await accounts.findOneAndUpdate(
       { address, account_type_id },
-      { address, account_type_id, balance },
+      { address, account_type_id, balance }
     );
     if (balance_update) {
       return main_helper.success_message("balance updated");

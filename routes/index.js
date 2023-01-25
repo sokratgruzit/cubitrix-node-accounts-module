@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express();
+const roles_controller = require("../controllers/roles_controller");
 const admin_controller = require("../controllers/admin_controller");
 const account_controller = require("../controllers/accounts_controller");
 const account_meta_controller = require("../controllers/accounts_meta_controller");
@@ -21,7 +22,10 @@ router.post("/verify", account_meta_controller.verify);
 router.post("/recovery/login", account_controller.login_with_email);
 
 router.post("/get_account", account_controller.get_account);
-router.post("/update_profile_auth", account_controller.update_auth_account_password);
+router.post(
+  "/update_profile_auth",
+  account_controller.update_auth_account_password
+);
 
 // google 2 factore auth routes
 router.post("/otp/generate", g2faController.generate_OTP);
@@ -35,9 +39,11 @@ router.get("/test", (req, res) => {
 });
 
 router.get("/koko", account_controller.create_different_accounts);
-
+//get all accaunt
+router.get("/all_accaunt", admin_controller.get_accounts);
+// roles
+router.get("/roles", roles_controller.index);
 // get all account
-router.get("/all-accounts", admin_controller.get_accounts);
 router.post("/filter", admin_controller.handle_filter);
 
 module.exports = router;

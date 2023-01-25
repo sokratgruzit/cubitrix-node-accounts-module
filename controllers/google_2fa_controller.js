@@ -1,4 +1,4 @@
-const account_auth = require("../models/accounts/account_auth");
+const { account_auth } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const speakeasy = require("speakeasy");
 
@@ -25,22 +25,25 @@ const generate_OTP = async (req, res) => {
   if (update_account_auth) {
     return main_helper.success_response(res, {
       base32,
-      otpauth_url
+      otpauth_url,
     });
   }
-  
+
   return main_helper.error_response(res, "Error while updating account");
 };
-  
+
 const verify_OTP = async (req, res) => {
   const { address, token } = req.body;
 
   const account = await account_auth.findOne({ address });
-  
+
   if (!account) {
-    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
+    return main_helper.error_response(
+      res,
+      "Token is invalid or user doesn't exist"
+    );
   }
-    
+
   const verified = speakeasy.totp.verify({
     secret: account_auth.otp_base32,
     encoding: "base32",
@@ -48,7 +51,10 @@ const verify_OTP = async (req, res) => {
   });
 
   if (!verified) {
-    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
+    return main_helper.error_response(
+      res,
+      "Token is invalid or user doesn't exist"
+    );
   }
 
   let update_account_auth = await account_auth.findOneAndUpdate(
@@ -63,20 +69,23 @@ const verify_OTP = async (req, res) => {
     return main_helper.success_response(res, {
       otp_verified: true,
       address: address,
-      otp_enabled: update_account_auth.otp_enabled
+      otp_enabled: update_account_auth.otp_enabled,
     });
   }
-  
+
   return main_helper.error_response(res, "Error while updating account auth");
 };
-  
+
 const validate_OTP = async (req, res) => {
   const { address, token } = req.body;
 
   const account = await account_auth.findOne({ address });
 
   if (!account) {
-    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
+    return main_helper.error_response(
+      res,
+      "Token is invalid or user doesn't exist"
+    );
   }
 
   const valid_token = speakeasy.totp.verify({
@@ -87,7 +96,10 @@ const validate_OTP = async (req, res) => {
   });
 
   if (!valid_token) {
-    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
+    return main_helper.error_response(
+      res,
+      "Token is invalid or user doesn't exist"
+    );
   }
 
   if (valid_token) {
@@ -95,10 +107,13 @@ const validate_OTP = async (req, res) => {
       otp_valid: true,
     });
   }
-  
-  return main_helper.error_response(res, "Token is invalid or user doesn't exist");
+
+  return main_helper.error_response(
+    res,
+    "Token is invalid or user doesn't exist"
+  );
 };
-  
+
 const disable_OTP = async (req, res) => {
   const { address } = req.body;
 
@@ -111,7 +126,7 @@ const disable_OTP = async (req, res) => {
   let update_account_auth = await account_auth.findOneAndUpdate(
     { address: address },
     {
-      otp_enabled: false
+      otp_enabled: false,
     }
   );
 
@@ -119,7 +134,7 @@ const disable_OTP = async (req, res) => {
     return main_helper.success_response(res, {
       otp_disabled: true,
       address: address,
-      otp_enabled: update_account_auth.otp_enabled
+      otp_enabled: update_account_auth.otp_enabled,
     });
   }
 
@@ -130,5 +145,5 @@ module.exports = {
   generate_OTP,
   verify_OTP,
   validate_OTP,
-  disable_OTP
+  disable_OTP,
 };

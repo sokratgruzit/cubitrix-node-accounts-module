@@ -1,8 +1,8 @@
 {
-  "name": "@brilliant_emporium/accounts",
-  "version": "0.0.3",
+  "name": "@cubitrix/cubitrix-node-accounts-module",
+  "version": "0.0.11",
   "description": "module for managing accounts data",
-  "main": "app.js",
+  "main": "accounts.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "test_api": "nodemon test.js"
@@ -17,9 +17,13 @@
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^6.8.1",
+    "mongoose-aggregate-paginate-v2": "^1.0.6",
+    "mongoose-paginate": "^5.0.3",
+    "mongoose-slug-updater": "^3.3.0",
     "nodemailer": "^6.8.0",
     "speakeasy": "^2.0.0",
-    "web3-eth-accounts": "^1.8.1"
+    "web3-eth-accounts": "^1.8.1",
+    "@cubitrix/models": "0.0.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"
