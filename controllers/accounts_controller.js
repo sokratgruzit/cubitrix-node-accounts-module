@@ -145,11 +145,12 @@ async function update_auth_account_password(req, res) {
     let verified = await verified_emails.findOne({
       address: address,
       email: account_meta_data.email,
+      verified: true,
     });
 
     if (verified && verified.verified) {
       account_auth.findOne({ address }, async function (err, user) {
-        if (err) {
+        if (err || !user) {
           await account_auth.create({ address, password: newPassword });
           return main_helper.success_response(res, "created");
         }
@@ -182,6 +183,8 @@ async function get_account(req, res) {
         },
       },
     ]);
+    const has_password = await account_auth.findOne({ address: "sh" });
+    results.hasPasswordSet = has_password?.password ? true : false;
 
     res.status(200).json(
       main_helper.return_data({
