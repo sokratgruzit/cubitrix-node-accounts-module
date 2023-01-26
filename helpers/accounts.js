@@ -73,11 +73,17 @@ async function generate_verification_code() {
   }
 }
 // method to check if email already verified in db
-async function check_email_verified(address) {
+async function check_email_verified(address, email) {
   try {
-    let verified_all = await verified_emails.find({
-      address,
+    // let verified_all = await verified_emails.find({
+    //   address,
+    // });
+
+    const verified_all = await verified_emails.find({
+      email,
     });
+
+    // console.log(verified_all, verified_all_email);
 
     if (verified_all.length > 0) {
       let verified_status = false;
@@ -133,10 +139,7 @@ async function check_and_send_verification_email(address, email) {
           address: address,
         });
         // send email
-        let email_sent = await send_verification_mail(
-          email,
-          email_verification_code
-        );
+        let email_sent = await send_verification_mail(email, email_verification_code);
         if (email_sent.success) {
           return main_helper.success_message("email sent");
         } else {
@@ -153,10 +156,7 @@ async function check_and_send_verification_email(address, email) {
         address: address,
       });
       // send email
-      let email_sent = await send_verification_mail(
-        email,
-        email_verification_code
-      );
+      let email_sent = await send_verification_mail(email, email_verification_code);
       if (email_sent.success && verify) {
         return main_helper.success_message("email sent");
       } else {
@@ -182,7 +182,7 @@ async function send_verification_mail(email, verification_code) {
     to: email,
     subject: "Verification Email",
     html: email_helper.verification_template(
-      process.env.FRONTEND_URL + "/verify/" + verification_code
+      process.env.FRONTEND_URL + "/verify/" + verification_code,
     ),
   };
 
@@ -213,7 +213,7 @@ async function set_account_balance(address, account_type_id, balance) {
   try {
     let balance_update = await accounts.findOneAndUpdate(
       { address, account_type_id },
-      { address, account_type_id, balance }
+      { address, account_type_id, balance },
     );
     if (balance_update) {
       return main_helper.success_message("balance updated");
