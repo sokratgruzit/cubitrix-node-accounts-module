@@ -64,10 +64,7 @@ async function login_account(req, res) {
         main_helper.error_message("Fill all fields")
       );
     }
-
     address = address.toLowerCase();
-
-    console.log(address);
 
     let type_id = await account_helper.get_type_id("user_current");
     let account_exists = await account_helper.check_account_exists(
@@ -134,7 +131,6 @@ async function create_different_accounts(req, res) {
       address
     );
 
-    console.log(create_account);
     res.send(create_account);
   } catch (e) {
     console.log(e.message);
@@ -168,17 +164,23 @@ async function save_account(
 }
 
 async function update_auth_account_password(req, res) {
-  const { currentPassword, newPassword, address } = req.body;
+  let { currentPassword, newPassword, address } = req.body;
+
+  if (!address && req.auth?.address) {
+    address = req.auth.address;
+  }
+
   let account_meta_data = await account_meta.findOne({ address: address });
   if (account_meta_data && account_meta_data.email) {
     let verified = await verified_emails.findOne({
       address: address,
       email: account_meta_data.email,
+      verified: true,
     });
 
     if (verified && verified.verified) {
       account_auth.findOne({ address }, async function (err, user) {
-        if (err) {
+        if (err || !user) {
           await account_auth.create({ address, password: newPassword });
           return main_helper.success_response(res, "created");
         }
@@ -201,6 +203,11 @@ async function update_auth_account_password(req, res) {
 async function get_account(req, res) {
   try {
     let { address } = req.body;
+
+    if (!address && req.auth?.address) {
+      address = req.auth.address;
+    }
+
     let results = await accounts.aggregate([
       { $match: { address } },
       {
@@ -212,6 +219,10 @@ async function get_account(req, res) {
         },
       },
     ]);
+    const has_password = await account_auth.findOne({ address: address });
+    if (results[0]) {
+      results[0].hasPasswordSet = has_password?.password ? true : false;
+    }
 
     res.status(200).json(
       main_helper.return_data({
