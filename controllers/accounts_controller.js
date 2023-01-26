@@ -56,9 +56,9 @@ async function login_with_email(req, res) {
 // logic of logging in
 async function login_account(req, res) {
   try {
-    let { address, balance } = req.body;
+    let { address } = req.body;
 
-    if (address == undefined || balance == undefined) {
+    if (address == undefined) {
       return main_helper.error_response(
         res,
         main_helper.error_message("Fill all fields")
@@ -78,13 +78,7 @@ async function login_account(req, res) {
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
     }
-    let account_saved = await save_account(
-      address,
-      type_id,
-      balance,
-      "user",
-      ""
-    );
+    let account_saved = await save_account(address, type_id, 0, "user", "");
     let account_meta_data = await account_meta.findOne({ address: address });
     if (account_meta_data && account_meta_data.email) {
       let verified = await verified_emails.findOne({
@@ -112,7 +106,7 @@ async function create_different_accounts(req, res) {
   try {
     let { address, type } = req.body;
 
-    if (address == undefined || type == undefined) {
+    if (address == undefined) {
       return main_helper.error_response(
         res,
         main_helper.error_message("missing some fields")
@@ -135,7 +129,7 @@ async function create_different_accounts(req, res) {
     let account_saved = await save_account(
       account_saved.address,
       type_id,
-      balance,
+      0,
       type,
       address
     );
