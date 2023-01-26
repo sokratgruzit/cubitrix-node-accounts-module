@@ -1,6 +1,6 @@
 {
   "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.0.13",
+  "version": "0.0.15",
   "description": "module for managing accounts data",
   "main": "accounts.js",
   "scripts": {
@@ -23,7 +23,7 @@
     "nodemailer": "^6.8.0",
     "speakeasy": "^2.0.0",
     "web3-eth-accounts": "^1.8.1",
-    "@cubitrix/models": "0.0.1"
+    "@cubitrix/models": "0.0.4"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"
