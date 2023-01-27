@@ -41,6 +41,7 @@ router.get("/test", (req, res) => {
 router.get("/koko", account_controller.create_different_accounts);
 //get all accaunt
 router.get("/all_accaunt", admin_controller.get_accounts);
+
 // roles
 router.get("/roles", roles_controller.index);
 // get all account

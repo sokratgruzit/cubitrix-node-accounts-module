@@ -48,7 +48,8 @@ async function get_type_id(type_name) {
     let type = await account_types.findOne({ name: type_name }).exec();
 
     if (type) {
-      return type._id;
+      let type_id = type._id;
+      return type_id.toString();
     }
     /*else {
       await account_types.create({ name: type_name }).exec();
@@ -60,6 +61,7 @@ async function get_type_id(type_name) {
     return main_helper.error_message(e.message);
   }
 }
+
 // generate code for verification
 async function generate_verification_code() {
   try {
@@ -139,7 +141,10 @@ async function check_and_send_verification_email(address, email) {
           address: address,
         });
         // send email
-        let email_sent = await send_verification_mail(email, email_verification_code);
+        let email_sent = await send_verification_mail(
+          email,
+          email_verification_code
+        );
         if (email_sent.success) {
           return main_helper.success_message("email sent");
         } else {
@@ -156,7 +161,10 @@ async function check_and_send_verification_email(address, email) {
         address: address,
       });
       // send email
-      let email_sent = await send_verification_mail(email, email_verification_code);
+      let email_sent = await send_verification_mail(
+        email,
+        email_verification_code
+      );
       if (email_sent.success && verify) {
         return main_helper.success_message("email sent");
       } else {
@@ -182,7 +190,7 @@ async function send_verification_mail(email, verification_code) {
     to: email,
     subject: "Verification Email",
     html: email_helper.verification_template(
-      process.env.FRONTEND_URL + "/verify/" + verification_code,
+      process.env.FRONTEND_URL + "/verify/" + verification_code
     ),
   };
 

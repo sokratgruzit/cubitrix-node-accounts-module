@@ -39,16 +39,19 @@ async function get_accounts(req, res) {
 
 async function handle_filter(req, res) {
   try {
-    let result, total_pages;
+    let result,
+      total_pages,
+      search_value,
+      search_option,
+      search_query,
+      select_value,
+      account_type_id;
     const req_body = await req.body;
     const req_type = req_body.type;
     const req_page = req_body.page ? req_body.page : 1;
+    const req_filter = req_body.filter;
     const limit = 2;
-    let { type, page, ...data } = req_body;
-
-    const account_type_id = await account_helper.get_type_id(
-      data.account_type_id
-    );
+    let { type, page, filter, ...data } = req_body;
 
     if (data.search) {
       data.search = data.search.toLowerCase();
@@ -60,43 +63,63 @@ async function handle_filter(req, res) {
       data.address = data.address.toLowerCase();
     }
 
-    if (account_type_id) {
-      data.account_type_id = account_type_id.toString();
-    }
-
-    if (!account_type_id) {
-      const { account_type_id, ...no_type_id } = data;
-      data = no_type_id;
-    }
-
     if (req_type === "account") {
-      if (data.search) {
-        result = await accounts.find({
-          address: { $regex: data.search, $options: "i" },
-        });
-
-        if (result.length === 0) {
-          let q;
-
-          if ("user_current".includes(data.search)) q = "user_current";
-
-          if ("loan".includes(data.search)) q = "loan";
-
-          if ("staking".includes(data.search)) q = "staking";
-
-          if ("trade".includes(data.search)) q = "trade";
-
-          let account_type = await account_helper.get_type_id(q);
-
-          result = await accounts
-            .find({ account_type_id: account_type })
-            .sort({ cteatedAt: "desc" })
-            .limit(limit)
-            .skip(limit * (req_page - 1));
-          total_pages = await accounts.count({ account_type_id: account_type });
+      if (req_filter && !isEmpty(req_filter)) {
+        if (
+          req_filter?.selects &&
+          req_filter?.selects?.account_type_id != "all"
+        ) {
+          select_value = req_filter?.selects?.account_type_id;
+          account_type_id = await account_helper.get_type_id(select_value);
         }
+
+        if (
+          !req_filter?.search?.option ||
+          req_filter?.search?.option == "all"
+        ) {
+          search_option = "all";
+        } else {
+          search_option = req_filter?.search?.option;
+        }
+        search_value = req_filter?.search?.value;
+
+        if (search_option == "all") {
+          let all_value = [];
+          all_value.push(
+            { account_owner: { $regex: search_value, $options: "i" } },
+            { address: { $regex: search_value, $options: "i" } }
+          );
+          if (select_value) {
+            search_query = {
+              $and: [{ account_type_id: account_type_id }, { $or: all_value }],
+            };
+          } else {
+            search_query = { $or: all_value };
+          }
+        } else {
+          search_query = {
+            [search_option]: { $regex: search_value, $options: "i" },
+          };
+        }
+
+        result = await accounts
+          .find(search_query)
+          .sort({ cteatedAt: "desc" })
+          .limit(limit)
+          .skip(limit * (req_page - 1));
+        result = await accounts.populate(result, {
+          path: "account_type_id",
+        });
+        total_pages = await accounts.count(search_query);
       } else {
-        result = await accounts.find(data);
+        result = await accounts
+          .find(data)
+          .sort({ cteatedAt: "desc" })
+          .limit(limit)
+          .skip(limit * (req_page - 1));
+        result = await accounts.populate(result, {
+          path: "account_type_id",
+        });
         total_pages = await accounts.count(data);
       }
     }
@@ -133,6 +156,15 @@ async function handle_filter(req, res) {
   } catch (e) {
     return main_helper.error_response(res, e.message);
   }
+}
+function isEmpty(obj) {
+  for (var prop in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+      return false;
+    }
+  }
+
+  return JSON.stringify(obj) === JSON.stringify({});
 }
 
 module.exports = {
