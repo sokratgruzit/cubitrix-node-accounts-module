@@ -39,10 +39,12 @@ async function get_accounts(req, res) {
 
 async function handle_filter(req, res) {
   try {
-    let result;
+    let result, total_pages;
     const req_body = await req.body;
     const req_type = req_body.type;
-    let { type, ...data } = req_body;
+    const req_page = req_body.page ? req_body.page : 1;
+    const limit = 2;
+    let { type, page, ...data } = req_body;
 
     const account_type_id = await account_helper.get_type_id(
       data.account_type_id
@@ -86,31 +88,46 @@ async function handle_filter(req, res) {
 
           let account_type = await account_helper.get_type_id(q);
 
-          result = await accounts.find({ account_type_id: account_type });
+          result = await accounts
+            .find({ account_type_id: account_type })
+            .sort({ cteatedAt: "desc" })
+            .limit(limit)
+            .skip(limit * (req_page - 1));
+          total_pages = await accounts.count({ account_type_id: account_type });
         }
       } else {
         result = await accounts.find(data);
+        total_pages = await accounts.count(data);
       }
     }
     if (req_type === "transactions") {
       if (data.search) {
       } else {
-        result = await transactions.find(data);
+        result = await transactions
+          .find(data)
+          .sort({ cteatedAt: "desc" })
+          .limit(limit)
+          .skip(limit * (req_page - 1));
+        total_pages = await transactions.count(data);
       }
     }
     if (req_type === "users") {
       if (data.search) {
       } else {
-        result = await account_meta.find(data);
+        result = await account_meta
+          .find(data)
+          .sort({ cteatedAt: "desc" })
+          .limit(limit)
+          .skip(limit * (req_page - 1));
+        total_pages = await account_meta.count(data);
       }
     }
-
-    console.log(result);
 
     return res.status(200).json(
       main_helper.return_data({
         status: true,
         data: result,
+        pages: Math.ceil(total_pages / limit),
       })
     );
   } catch (e) {
