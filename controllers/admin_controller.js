@@ -152,8 +152,9 @@ async function handle_filter(req, res) {
           ];
         }
         if (
-          !isEmpty(select_tx_status_value) ||
-          !isEmpty(select_tx_type_value)
+          (!isEmpty(select_tx_status_value) &&
+            select_tx_status_value != "all") ||
+          (!isEmpty(select_tx_type_value) && select_tx_type_value != "all")
         ) {
           if (search_value) {
             final_value = [{ $or: all_value }];
@@ -190,7 +191,49 @@ async function handle_filter(req, res) {
       }
     }
     if (req_type === "users") {
-      if (data.search) {
+      if (req_filter && !isEmpty(req_filter)) {
+        select_value = req_filter?.selects?.nationality;
+
+        if (
+          !req_filter?.search?.option ||
+          req_filter?.search?.option == "all"
+        ) {
+          search_option = "all";
+        } else {
+          search_option = req_filter?.search?.option;
+        }
+        search_value = req_filter?.search?.value;
+
+        if (search_option == "all") {
+          all_value.push(
+            { name: { $regex: search_value, $options: "i" } },
+            { address: { $regex: search_value, $options: "i" } },
+            { email: { $regex: search_value, $options: "i" } }
+          );
+          if (typeof search_option == "number") {
+            all_value.push({ mobile: { $regex: search_value, $options: "i" } });
+          }
+        } else {
+          all_value = [
+            {
+              [search_option]: { $regex: search_value, $options: "i" },
+            },
+          ];
+        }
+        if (select_value && select_value != "all") {
+          search_query = {
+            $and: [{ nationality: select_value }, { $or: all_value }],
+          };
+        } else {
+          search_query = { $or: all_value };
+        }
+
+        result = await account_meta
+          .find(search_query)
+          .sort({ cteatedAt: "desc" })
+          .limit(limit)
+          .skip(limit * (req_page - 1));
+        total_pages = await account_meta.count(search_query);
       } else {
         result = await account_meta
           .find(data)
