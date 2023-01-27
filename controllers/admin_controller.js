@@ -45,6 +45,8 @@ async function handle_filter(req, res) {
       search_option,
       search_query,
       select_value,
+      final_value,
+      all_value = [],
       account_type_id;
     const req_body = await req.body;
     const req_type = req_body.type;
@@ -84,7 +86,6 @@ async function handle_filter(req, res) {
         search_value = req_filter?.search?.value;
 
         if (search_option == "all") {
-          let all_value = [];
           all_value.push(
             { account_owner: { $regex: search_value, $options: "i" } },
             { address: { $regex: search_value, $options: "i" } }
@@ -124,7 +125,61 @@ async function handle_filter(req, res) {
       }
     }
     if (req_type === "transactions") {
-      if (data.search) {
+      if (req_filter && !isEmpty(req_filter)) {
+        select_tx_status_value = req_filter?.selects?.tx_status;
+        select_tx_type_value = req_filter?.selects?.tx_type;
+        if (
+          !req_filter?.search?.option ||
+          req_filter?.search?.option == "all"
+        ) {
+          search_option = "all";
+        } else {
+          search_option = req_filter?.search?.option;
+        }
+        search_value = req_filter?.search?.value;
+
+        if (search_option == "all") {
+          all_value.push(
+            { tx_hash: { $regex: search_value, $options: "i" } },
+            { from: { $regex: search_value, $options: "i" } },
+            { to: { $regex: search_value, $options: "i" } }
+          );
+        } else {
+          all_value = [
+            {
+              [search_option]: { $regex: search_value, $options: "i" },
+            },
+          ];
+        }
+        if (
+          !isEmpty(select_tx_status_value) ||
+          !isEmpty(select_tx_type_value)
+        ) {
+          if (search_value) {
+            final_value = [{ $or: all_value }];
+          } else {
+            final_value = [];
+          }
+          if (!isEmpty(select_tx_status_value) && select_tx_status_value) {
+            final_value.push({ tx_status: select_tx_status_value });
+          }
+
+          if (!isEmpty(select_tx_type_value) && select_tx_type_value) {
+            final_value.push({ tx_type: select_tx_type_value });
+          }
+
+          search_query = {
+            $and: final_value,
+          };
+        } else {
+          search_query = { $or: all_value };
+        }
+        result = await transactions
+          .find(search_query)
+          .sort({ cteatedAt: "desc" })
+          .limit(limit)
+          .skip(limit * (req_page - 1));
+        total_pages = await transactions.count(search_query);
       } else {
         result = await transactions
           .find(data)
