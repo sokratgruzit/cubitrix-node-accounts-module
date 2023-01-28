@@ -9,12 +9,12 @@ const account_meta_controller = require("../controllers/accounts_meta_controller
 const g2faController = require("../controllers/google_2fa_controller");
 // const validation = require('../middleware/validation_middleware');
 
-const isAuthenticated = require("../middleware/isAuthenticated");
+const is_authenticated = require("../middleware/is_authenticated");
 
 const cookieParser = require("cookie-parser");
 
 router.use(cookieParser());
-router.use(isAuthenticated);
+router.use(is_authenticated);
 
 router.post("/login", account_controller.login_account);
 router.post("/update_profile", account_meta_controller.update_meta);
@@ -41,6 +41,7 @@ router.get("/test", (req, res) => {
 router.get("/koko", account_controller.create_different_accounts);
 //get all accaunt
 router.get("/all_accaunt", admin_controller.get_accounts);
+
 // roles
 router.get("/roles", roles_controller.index);
 // get all account

@@ -56,18 +56,15 @@ async function login_with_email(req, res) {
 // logic of logging in
 async function login_account(req, res) {
   try {
-    let { address, balance } = req.body;
+    let { address } = req.body;
 
-    if (address == undefined || balance == undefined) {
+    if (address == undefined) {
       return main_helper.error_response(
         res,
         main_helper.error_message("Fill all fields")
       );
     }
-
     address = address.toLowerCase();
-
-    console.log(address);
 
     let type_id = await account_helper.get_type_id("user_current");
     let account_exists = await account_helper.check_account_exists(
@@ -78,13 +75,7 @@ async function login_account(req, res) {
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
     }
-    let account_saved = await save_account(
-      address,
-      type_id,
-      balance,
-      "user",
-      ""
-    );
+    let account_saved = await save_account(address, type_id, 0, "user", "");
     let account_meta_data = await account_meta.findOne({ address: address });
     if (account_meta_data && account_meta_data.email) {
       let verified = await verified_emails.findOne({
@@ -112,7 +103,7 @@ async function create_different_accounts(req, res) {
   try {
     let { address, type } = req.body;
 
-    if (address == undefined || type == undefined) {
+    if (address == undefined) {
       return main_helper.error_response(
         res,
         main_helper.error_message("missing some fields")
@@ -135,12 +126,11 @@ async function create_different_accounts(req, res) {
     let account_saved = await save_account(
       account_saved.address,
       type_id,
-      balance,
+      0,
       type,
       address
     );
 
-    console.log(create_account);
     res.send(create_account);
   } catch (e) {
     console.log(e.message);
@@ -174,17 +164,23 @@ async function save_account(
 }
 
 async function update_auth_account_password(req, res) {
-  const { currentPassword, newPassword, address } = req.body;
+  let { currentPassword, newPassword, address } = req.body;
+
+  if (!address && req.auth?.address) {
+    address = req.auth.address;
+  }
+
   let account_meta_data = await account_meta.findOne({ address: address });
   if (account_meta_data && account_meta_data.email) {
     let verified = await verified_emails.findOne({
       address: address,
       email: account_meta_data.email,
+      verified: true,
     });
 
     if (verified && verified.verified) {
       account_auth.findOne({ address }, async function (err, user) {
-        if (err) {
+        if (err || !user) {
           await account_auth.create({ address, password: newPassword });
           return main_helper.success_response(res, "created");
         }
@@ -207,6 +203,11 @@ async function update_auth_account_password(req, res) {
 async function get_account(req, res) {
   try {
     let { address } = req.body;
+
+    if (!address && req.auth?.address) {
+      address = req.auth.address;
+    }
+
     let results = await accounts.aggregate([
       { $match: { address } },
       {
@@ -218,6 +219,10 @@ async function get_account(req, res) {
         },
       },
     ]);
+    const has_password = await account_auth.findOne({ address: address });
+    if (results[0]) {
+      results[0].hasPasswordSet = has_password?.password ? true : false;
+    }
 
     res.status(200).json(
       main_helper.return_data({

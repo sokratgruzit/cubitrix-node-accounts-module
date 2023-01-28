@@ -48,7 +48,8 @@ async function get_type_id(type_name) {
     let type = await account_types.findOne({ name: type_name }).exec();
 
     if (type) {
-      return type._id;
+      let type_id = type._id;
+      return type_id.toString();
     }
     /*else {
       await account_types.create({ name: type_name }).exec();
@@ -60,6 +61,7 @@ async function get_type_id(type_name) {
     return main_helper.error_message(e.message);
   }
 }
+
 // generate code for verification
 async function generate_verification_code() {
   try {
@@ -73,11 +75,17 @@ async function generate_verification_code() {
   }
 }
 // method to check if email already verified in db
-async function check_email_verified(address) {
+async function check_email_verified(address, email) {
   try {
-    let verified_all = await verified_emails.find({
-      address,
+    // let verified_all = await verified_emails.find({
+    //   address,
+    // });
+
+    const verified_all = await verified_emails.find({
+      email,
     });
+
+    // console.log(verified_all, verified_all_email);
 
     if (verified_all.length > 0) {
       let verified_status = false;
@@ -195,36 +203,6 @@ async function send_verification_mail(email, verification_code) {
   return response;
 }
 
-// get account balance
-async function get_account_balance(address, account_type_id) {
-  try {
-    let balance = await accounts.find({ address, account_type_id });
-    if (balance) {
-      return main_helper.return_data(true, balance.balance);
-    }
-    return main_helper.error_message("error");
-  } catch (e) {
-    console.log(e.message);
-    return main_helper.error_message("error");
-  }
-}
-// set account balance
-async function set_account_balance(address, account_type_id, balance) {
-  try {
-    let balance_update = await accounts.findOneAndUpdate(
-      { address, account_type_id },
-      { address, account_type_id, balance }
-    );
-    if (balance_update) {
-      return main_helper.success_message("balance updated");
-    }
-    return main_helper.error_message("error");
-  } catch (e) {
-    console.log(e.message);
-    return main_helper.error_message("error");
-  }
-}
-
 async function send_mail() {}
 module.exports = {
   check_account_meta_exists,
@@ -234,6 +212,4 @@ module.exports = {
   check_email_verified,
   check_and_send_verification_email,
   send_verification_mail,
-  get_account_balance,
-  set_account_balance,
 };
