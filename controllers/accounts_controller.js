@@ -75,7 +75,6 @@ async function login_account(req, res) {
         await account_auth.create({ address });
       }
     }
-    console.log(account_saved);
     if (account_saved.success) {
       return main_helper.success_response(res, account_saved);
     }
@@ -127,7 +126,7 @@ async function save_account(address, type_id, balance, account_category, account
     let save_user = await accounts.create({
       address: address,
       account_type_id: type_id,
-      balance: balance,
+      balance: Number(balance),
       account_category: account_category,
       account_owner: account_owner,
     });
