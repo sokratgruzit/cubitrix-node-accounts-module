@@ -19,7 +19,7 @@ const generate_OTP = async (req, res) => {
       otp_auth_url: otpauth_url,
       otp_base32: base32,
       otp_hex: hex,
-    }
+    },
   );
 
   if (update_account_auth) {
@@ -38,23 +38,17 @@ const verify_OTP = async (req, res) => {
   const account = await account_auth.findOne({ address });
 
   if (!account) {
-    return main_helper.error_response(
-      res,
-      "Token is invalid or user doesn't exist"
-    );
+    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
   const verified = speakeasy.totp.verify({
     secret: account_auth.otp_base32,
     encoding: "base32",
-    token,
+    token: token,
   });
 
   if (!verified) {
-    return main_helper.error_response(
-      res,
-      "Token is invalid or user doesn't exist"
-    );
+    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
   let update_account_auth = await account_auth.findOneAndUpdate(
@@ -62,7 +56,7 @@ const verify_OTP = async (req, res) => {
     {
       otp_enabled: true,
       otp_verified: true,
-    }
+    },
   );
 
   if (update_account_auth) {
@@ -82,10 +76,7 @@ const validate_OTP = async (req, res) => {
   const account = await account_auth.findOne({ address });
 
   if (!account) {
-    return main_helper.error_response(
-      res,
-      "Token is invalid or user doesn't exist"
-    );
+    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
   const valid_token = speakeasy.totp.verify({
@@ -96,10 +87,7 @@ const validate_OTP = async (req, res) => {
   });
 
   if (!valid_token) {
-    return main_helper.error_response(
-      res,
-      "Token is invalid or user doesn't exist"
-    );
+    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
   if (valid_token) {
@@ -108,10 +96,7 @@ const validate_OTP = async (req, res) => {
     });
   }
 
-  return main_helper.error_response(
-    res,
-    "Token is invalid or user doesn't exist"
-  );
+  return main_helper.error_response(res, "Token is invalid or user doesn't exist");
 };
 
 const disable_OTP = async (req, res) => {
@@ -127,7 +112,7 @@ const disable_OTP = async (req, res) => {
     { address: address },
     {
       otp_enabled: false,
-    }
+    },
   );
 
   if (update_account_auth) {
