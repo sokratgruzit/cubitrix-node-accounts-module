@@ -3,7 +3,9 @@ const main_helper = require("../helpers/index");
 const speakeasy = require("speakeasy");
 
 const generate_OTP = async (req, res) => {
-  const { address } = req.body;
+  let { address } = req.body;
+
+  address = address.toLowerCase();
 
   const { ascii, hex, base32, otpauth_url } = speakeasy.generateSecret({
     issuer: "codevoweb.com",
@@ -33,7 +35,9 @@ const generate_OTP = async (req, res) => {
 };
 
 const verify_OTP = async (req, res) => {
-  const { address, token } = req.body;
+  let { address, token } = req.body;
+
+  address = address.toLowerCase();
 
   const account = await account_auth.findOne({ address });
 
@@ -71,7 +75,9 @@ const verify_OTP = async (req, res) => {
 };
 
 const validate_OTP = async (req, res) => {
-  const { address, token } = req.body;
+  let { address, token } = req.body;
+
+  address = address.toLowerCase();
 
   const account = await account_auth.findOne({ address });
 
@@ -100,7 +106,9 @@ const validate_OTP = async (req, res) => {
 };
 
 const disable_OTP = async (req, res) => {
-  const { address } = req.body;
+  let { address } = req.body;
+
+  address = address.toLowerCase();
 
   const account = await account_auth.findOne({ address });
 

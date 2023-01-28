@@ -19,6 +19,8 @@ async function update_meta(req, res) {
       );
     }
 
+    address = address.toLowerCase();
+
     let account_meta_exists = await account_meta.findOne({
       address,
     });

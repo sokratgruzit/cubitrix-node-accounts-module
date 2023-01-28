@@ -5,7 +5,7 @@ function is_authenticated(req, res, next) {
   if (accessToken) {
     try {
       const decoded = jwt.verify(accessToken, "jwt_secret");
-      req.auth = { address: decoded.address, email: decoded.email };
+      req.auth = { address: decoded.address.toLowerCase(), email: decoded.email };
     } catch (e) {}
   }
   next();
