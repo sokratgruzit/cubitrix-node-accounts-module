@@ -48,24 +48,25 @@ async function login_with_email(req, res) {
 // logic of logging in
 async function login_account(req, res) {
   try {
-    let { address, balance } = req.body;
+    let { address } = req.body;
 
-    if (address == undefined || balance == undefined) {
+    if (address == undefined) {
       return main_helper.error_response(
         res,
         main_helper.error_message("Fill all fields"),
       );
     }
     address = address.toLowerCase();
-
+    console.log("here");
     let type_id = await account_helper.get_type_id("user_current");
     let account_exists = await account_helper.check_account_exists(address, type_id);
 
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
     }
-    let account_saved = await save_account(address, type_id, balance, "user", "");
+    let account_saved = await save_account(address, type_id, "user", "");
     let account_meta_data = await account_meta.findOne({ address: address });
+
     if (account_meta_data && account_meta_data.email) {
       let verified = await verified_emails.findOne({
         address: address,
@@ -75,7 +76,7 @@ async function login_account(req, res) {
         await account_auth.create({ address });
       }
     }
-
+    console.log(account_saved);
     if (account_saved.success) {
       return main_helper.success_response(res, account_saved);
     }
@@ -120,14 +121,17 @@ async function create_different_accounts(req, res) {
   }
 }
 // saving account in db
-async function save_account(address, type_id, balance, account_category, account_owner) {
+async function save_account(address, type_id, account_category, account_owner) {
   try {
     let save_user = await accounts.create({
       address: address,
       account_type_id: type_id,
-      balance: balance,
       account_category: account_category,
       account_owner: account_owner,
+    });
+
+    await account_auth.create({
+      address,
     });
 
     if (save_user) {
@@ -185,7 +189,7 @@ async function get_account(req, res) {
     }
 
     let results = await accounts.aggregate([
-      { $match: { address } },
+      { $match: { address: address.toLowerCase() } },
       {
         $lookup: {
           from: "account_metas",
@@ -195,6 +199,7 @@ async function get_account(req, res) {
         },
       },
     ]);
+
     const has_password = await account_auth.findOne({ address: address });
     if (results[0]) {
       results[0].hasPasswordSet = has_password?.password ? true : false;
