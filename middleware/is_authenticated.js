@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 
-function isAuthenticated(req, res, next) {
+function is_authenticated(req, res, next) {
   const accessToken = req.cookies["Access-Token"];
   if (accessToken) {
     try {
@@ -11,4 +11,4 @@ function isAuthenticated(req, res, next) {
   next();
 }
 
-module.exports = isAuthenticated;
+module.exports = is_authenticated;
