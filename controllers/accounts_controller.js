@@ -56,13 +56,16 @@ async function login_account(req, res) {
         main_helper.error_message("Fill all fields"),
       );
     }
+
     address = address.toLowerCase();
+
     let type_id = await account_helper.get_type_id("user_current");
     let account_exists = await account_helper.check_account_exists(address, type_id);
 
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
     }
+
     let account_saved = await save_account(address, type_id, 0, "user", "");
     let account_meta_data = await account_meta.findOne({ address: address });
 
@@ -71,13 +74,16 @@ async function login_account(req, res) {
         address: address,
         email: account_meta_data.email,
       });
+
       if (verified && verified.verified) {
         await account_auth.create({ address });
       }
     }
+
     if (account_saved.success) {
       return main_helper.success_response(res, account_saved);
     }
+
     return main_helper.error_response(res, account_exists);
   } catch (e) {
     return main_helper.error_response(res, main_helper.error_message(e.message));
