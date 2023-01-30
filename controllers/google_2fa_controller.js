@@ -8,8 +8,8 @@ const generate_OTP = async (req, res) => {
   address = address.toLowerCase();
 
   const { ascii, hex, base32, otpauth_url } = speakeasy.generateSecret({
-    issuer: "codevoweb.com",
-    name: "admin@admin.com",
+    issuer: "complend.com",
+    name: "complend@gmail.com",
     length: 15,
   });
 
@@ -46,10 +46,12 @@ const verify_OTP = async (req, res) => {
   }
 
   const verified = speakeasy.totp.verify({
-    secret: account_auth.otp_base32,
+    secret: account.otp_base32,
     encoding: "base32",
     token: token,
   });
+
+  console.log(token, account.otp_base32)
 
   if (!verified) {
     return main_helper.error_response(res, "Token is invalid or user doesn't exist");
