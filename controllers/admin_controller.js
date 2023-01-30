@@ -84,25 +84,33 @@ async function handle_filter(req, res) {
           search_option = req_filter?.search?.option;
         }
         search_value = req_filter?.search?.value;
+        if (search_value) {
+          if (search_option == "all") {
+            all_value.push(
+              { account_owner: { $regex: search_value, $options: "i" } },
+              { address: { $regex: search_value, $options: "i" } }
+            );
+          } else {
+            all_value.push({
+              [search_option]: { $regex: search_value, $options: "i" },
+            });
+          }
+        }
 
-        if (search_option == "all") {
-          all_value.push(
-            { account_owner: { $regex: search_value, $options: "i" } },
-            { address: { $regex: search_value, $options: "i" } }
-          );
-          if (select_value) {
+        if (select_value) {
+          if (!isEmpty(all_value) && all_value.length > 0) {
             search_query = {
               $and: [{ account_type_id: account_type_id }, { $or: all_value }],
             };
           } else {
-            search_query = { $or: all_value };
+            search_query = {
+              $and: [{ account_type_id: account_type_id }],
+            };
           }
         } else {
-          search_query = {
-            [search_option]: { $regex: search_value, $options: "i" },
-          };
+          search_query = { $or: all_value };
         }
-
+        console.log(search_query);
         result = await accounts
           .find(search_query)
           .sort({ cteatedAt: "desc" })
