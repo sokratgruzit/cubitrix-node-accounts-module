@@ -38,7 +38,7 @@ router.get("/test", (req, res) => {
   res.status(200).send("hi Jinx");
 });
 
-router.get("/koko", account_controller.create_different_accounts);
+router.post("/koko", account_controller.create_different_accounts);
 //get all accaunt
 router.get("/all_accaunt", admin_controller.get_accounts);
 

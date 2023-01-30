@@ -1,4 +1,9 @@
-const { accounts, transactions, account_meta } = require("@cubitrix/models");
+const {
+  accounts,
+  transactions,
+  account_meta,
+  user,
+} = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 
@@ -108,7 +113,12 @@ async function handle_filter(req, res) {
             };
           }
         } else {
-          search_query = { $or: all_value };
+          if (!isEmpty(all_value) && all_value.length > 0) {
+            search_query = { $or: all_value };
+          }
+        }
+        if (!search_query) {
+          search_query = {};
         }
         console.log(search_query);
         result = await accounts
@@ -116,9 +126,6 @@ async function handle_filter(req, res) {
           .sort({ cteatedAt: "desc" })
           .limit(limit)
           .skip(limit * (req_page - 1));
-        result = await accounts.populate(result, {
-          path: "account_type_id",
-        });
         total_pages = await accounts.count(search_query);
       } else {
         result = await accounts
@@ -126,11 +133,11 @@ async function handle_filter(req, res) {
           .sort({ cteatedAt: "desc" })
           .limit(limit)
           .skip(limit * (req_page - 1));
-        result = await accounts.populate(result, {
-          path: "account_type_id",
-        });
         total_pages = await accounts.count(data);
       }
+      result = await accounts.populate(result, {
+        path: "account_type_id",
+      });
     }
     if (req_type === "transactions") {
       if (req_filter && !isEmpty(req_filter)) {
@@ -250,6 +257,14 @@ async function handle_filter(req, res) {
           .skip(limit * (req_page - 1));
         total_pages = await account_meta.count(data);
       }
+    }
+    if (req_type === "admins") {
+      result = await user
+        .find()
+        .sort({ cteatedAt: "desc" })
+        .limit(limit)
+        .skip(limit * (req_page - 1));
+      total_pages = await user.count();
     }
 
     return res.status(200).json(
