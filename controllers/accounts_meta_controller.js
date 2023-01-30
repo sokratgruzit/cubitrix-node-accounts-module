@@ -119,19 +119,19 @@ async function verify(req, res) {
     let verification = await verified_emails.findOne({
       verification_code: code,
     });
-
+    console.log(verification);
     if (verification) {
-      await verified_emails.findOneAndUpdate(
+      await verification.updateOne(
         { verification_code: code },
         {
           verified_at: Date.now(),
           verified: true,
         },
       );
-      await verified_emails.deleteMany({
-        address: verification.address,
-        verified: false,
-      });
+      // await verified_emails.deleteMany({
+      //   email: verification.email,
+      //   verified: false,
+      // });
       await account_meta.findOneAndUpdate(
         { address: verification.address },
         { email: verification.email },
