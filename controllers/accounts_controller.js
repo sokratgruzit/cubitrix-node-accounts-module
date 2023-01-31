@@ -116,19 +116,20 @@ async function create_different_accounts(req, res) {
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
     }
-    let account = new web3_accounts(
-      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
+    let account_web3 = new web3_accounts(
+      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"
     );
-    let create_account = account.create();
+    let create_account = account_web3.create();
+    let created_address = create_account.address;
     let account_saved = await save_account(
-      account_saved.address,
+      created_address.toLowerCase(),
       type_id,
       0,
       type,
       address,
     );
 
-    res.send(create_account);
+    res.send(account_saved);
   } catch (e) {
     console.log(e.message);
   }

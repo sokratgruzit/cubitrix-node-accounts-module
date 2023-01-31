@@ -1,41 +1,13 @@
-const { accounts, transactions, account_meta } = require("@cubitrix/models");
+const {
+  accounts,
+  transactions,
+  account_meta,
+  user,
+} = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 
 require("dotenv").config();
-
-async function get_accounts(req, res) {
-  try {
-    let options = {
-      limit: req.query.limit || 2,
-      page: req.query.page || 2,
-    };
-    let results = await accounts.aggregate([
-      {
-        $lookup: {
-          from: "account_metas",
-          localField: "address",
-          foreignField: "address",
-          as: "meta",
-        },
-      },
-    ]);
-    results = await accounts.aggregatePaginate(results, options);
-    results = await accounts.populate(results, {
-      path: "account_type_id",
-    });
-
-    res.status(200).json(
-      main_helper.return_data({
-        status: true,
-        data: { accounts: results },
-      })
-    );
-  } catch (e) {
-    console.log(e);
-    return main_helper.error_response(res, "error getting accounts");
-  }
-}
 
 async function handle_filter(req, res) {
   try {
@@ -44,6 +16,8 @@ async function handle_filter(req, res) {
       search_value,
       search_option,
       search_query,
+      main_result,
+      one_result,
       select_value,
       final_value,
       all_value = [],
@@ -84,44 +58,84 @@ async function handle_filter(req, res) {
           search_option = req_filter?.search?.option;
         }
         search_value = req_filter?.search?.value;
+        if (search_value) {
+          if (search_option == "all") {
+            all_value.push(
+              { account_owner: { $regex: search_value, $options: "i" } },
+              { address: { $regex: search_value, $options: "i" } }
+            );
+          } else {
+            all_value.push({
+              [search_option]: { $regex: search_value, $options: "i" },
+            });
+          }
+        }
 
-        if (search_option == "all") {
-          all_value.push(
-            { account_owner: { $regex: search_value, $options: "i" } },
-            { address: { $regex: search_value, $options: "i" } }
-          );
-          if (select_value) {
+        if (select_value) {
+          if (!isEmpty(all_value) && all_value.length > 0) {
             search_query = {
               $and: [{ account_type_id: account_type_id }, { $or: all_value }],
             };
           } else {
-            search_query = { $or: all_value };
+            search_query = {
+              $and: [{ account_type_id: account_type_id }],
+            };
           }
         } else {
-          search_query = {
-            [search_option]: { $regex: search_value, $options: "i" },
-          };
+          if (!isEmpty(all_value) && all_value.length > 0) {
+            search_query = { $or: all_value };
+          }
         }
-
+        if (!search_query) {
+          search_query = {};
+        }
+        console.log(search_query);
         result = await accounts
           .find(search_query)
           .sort({ cteatedAt: "desc" })
           .limit(limit)
           .skip(limit * (req_page - 1));
-        result = await accounts.populate(result, {
-          path: "account_type_id",
-        });
         total_pages = await accounts.count(search_query);
       } else {
-        result = await accounts
-          .find(data)
-          .sort({ cteatedAt: "desc" })
-          .limit(limit)
-          .skip(limit * (req_page - 1));
-        result = await accounts.populate(result, {
-          path: "account_type_id",
-        });
-        total_pages = await accounts.count(data);
+        result = await accounts.aggregate([
+          { $match: { account_owner: "" } },
+          {
+            $lookup: {
+              from: "accounts",
+              localField: "address",
+              foreignField: "account_owner",
+              as: "inner_accounts",
+              pipeline: [
+                {
+                  $lookup: {
+                    from: "account_types",
+                    localField: "account_type_id",
+                    foreignField: "_id",
+                    as: "account_type_id",
+                  },
+                },
+                { $unwind: "$account_type_id" },
+              ],
+            },
+          },
+          {
+            $lookup: {
+              from: "account_types",
+              localField: "account_type_id",
+              foreignField: "_id",
+              as: "account_type_id",
+            },
+          },
+          { $unwind: "$account_type_id" },
+          {
+            $limit: limit + limit * (req_page - 1),
+          },
+          {
+            $skip: limit * (req_page - 1),
+          },
+        ]);
+        console.log(limit * (req_page - 1));
+        total_pages = await accounts.count({ account_owner: "" });
       }
     }
     if (req_type === "transactions") {
@@ -243,6 +257,14 @@ async function handle_filter(req, res) {
         total_pages = await account_meta.count(data);
       }
     }
+    if (req_type === "admins") {
+      result = await user
+        .find()
+        .sort({ cteatedAt: "desc" })
+        .limit(limit)
+        .skip(limit * (req_page - 1));
+      total_pages = await user.count();
+    }
 
     return res.status(200).json(
       main_helper.return_data({
@@ -266,6 +288,5 @@ function isEmpty(obj) {
 }
 
 module.exports = {
-  get_accounts,
   handle_filter,
 };
