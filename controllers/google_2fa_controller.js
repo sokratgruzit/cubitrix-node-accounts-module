@@ -1,6 +1,7 @@
 const { account_auth } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const speakeasy = require("speakeasy");
+const jwt = require("jsonwebtoken");
 
 const generate_OTP = async (req, res) => {
   let { address } = req.body;
@@ -9,7 +10,7 @@ const generate_OTP = async (req, res) => {
 
   const { ascii, hex, base32, otpauth_url } = speakeasy.generateSecret({
     issuer: "complend.com",
-    name: "complend@gmail.com",
+    name: "COMPLEND",
     length: 15,
   });
 
@@ -51,8 +52,6 @@ const verify_OTP = async (req, res) => {
     token: token,
   });
 
-  console.log(token, account.otp_base32)
-
   if (!verified) {
     return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
@@ -79,7 +78,7 @@ const verify_OTP = async (req, res) => {
 const validate_OTP = async (req, res) => {
   let { address, token } = req.body;
 
-  address = address.toLowerCase();
+  address = address?.toLowerCase();
 
   const account = await account_auth.findOne({ address });
 
@@ -88,7 +87,7 @@ const validate_OTP = async (req, res) => {
   }
 
   const valid_token = speakeasy.totp.verify({
-    secret: account_auth?.otp_base32,
+    secret: account?.otp_base32,
     encoding: "base32",
     token,
     window: 1,
@@ -99,9 +98,15 @@ const validate_OTP = async (req, res) => {
   }
 
   if (valid_token) {
-    return main_helper.success_response(res, {
-      otp_valid: true,
+    const token = jwt.sign({ address: account.address }, "jwt_secret", {
+      expiresIn: "24h",
     });
+    res.cookie("Access-Token", token, {
+      sameSite: "none",
+      httpOnly: true,
+      secure: true,
+    });
+    return main_helper.success_response(res, "access granted");
   }
 
   return main_helper.error_response(res, "Token is invalid or user doesn't exist");
@@ -122,6 +127,7 @@ const disable_OTP = async (req, res) => {
     { address: address },
     {
       otp_enabled: false,
+      otp_verified: false,
     },
   );
 

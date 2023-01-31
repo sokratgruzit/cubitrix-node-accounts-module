@@ -31,6 +31,13 @@ async function login_with_email(req, res) {
   if (found.password) {
     const pass_match = await found.match_password(password);
     if (!pass_match) return main_helper.error_response(res, "incorrect password");
+
+    if (found.otp_enabled)
+      return main_helper.success_response(res, {
+        message: "proceed 2fa",
+        address: account.address,
+      });
+
     const token = jwt.sign({ address: account.address, email: email }, "jwt_secret", {
       expiresIn: "24h",
     });
@@ -39,7 +46,10 @@ async function login_with_email(req, res) {
       httpOnly: true,
       secure: true,
     });
-    return main_helper.success_response(res, "access granted");
+    return main_helper.success_response(res, {
+      message: "access granted",
+      address: account.address,
+    });
   }
 
   main_helper.error_response(res, "no password found");
@@ -68,16 +78,13 @@ async function login_account(req, res) {
 
     let account_saved = await save_account(address, type_id, 0, "user", "");
     let account_meta_data = await account_meta.findOne({ address: address });
+    await account_auth.create({ address });
 
     if (account_meta_data && account_meta_data.email) {
       let verified = await verified_emails.findOne({
         address: address,
         email: account_meta_data.email,
       });
-
-      if (verified && verified.verified) {
-        await account_auth.create({ address });
-      }
     }
 
     if (account_saved.success) {
@@ -211,9 +218,11 @@ async function get_account(req, res) {
       },
     ]);
 
-    const has_password = await account_auth.findOne({ address: address });
+    const auth_acc = await account_auth.findOne({ address: address });
     if (results[0]) {
-      results[0].hasPasswordSet = has_password?.password ? true : false;
+      results[0].hasPasswordSet = auth_acc?.password ? true : false;
+      results[0].otp_enabled = auth_acc?.otp_enabled;
+      results[0].otp_verified = auth_acc?.otp_verified;
     }
 
     res.status(200).json(

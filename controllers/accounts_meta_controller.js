@@ -119,23 +119,22 @@ async function verify(req, res) {
     let verification = await verified_emails.findOne({
       verification_code: code,
     });
-    console.log(verification);
     if (verification) {
-      await verification.updateOne(
-        { verification_code: code },
-        {
+      await Promise.allSettled([
+        verification.updateOne({
           verified_at: Date.now(),
           verified: true,
-        },
-      );
-      // await verified_emails.deleteMany({
-      //   email: verification.email,
-      //   verified: false,
-      // });
-      await account_meta.findOneAndUpdate(
-        { address: verification.address },
-        { email: verification.email },
-      );
+        }),
+        account_meta.findOneAndUpdate(
+          { address: verification.address },
+          { email: verification.email },
+        ),
+      ]);
+
+      await verified_emails.deleteMany({
+        email: verification.email,
+        verified: false,
+      });
 
       return main_helper.success_response(res, {
         success: true,
@@ -178,7 +177,40 @@ async function save_account_meta(
   }
 }
 
+async function resend_email(req, res) {
+  let { address } = req.body;
+  address = address?.toLowerCase();
+
+  try {
+    const code = await account_helper.generate_verification_code();
+    const verify_email = await verified_emails.findOne({
+      address: address.toLowerCase(),
+    });
+
+    if (!verify_email) return main_helper.error_response(res, "email resend failed");
+
+    await verify_email.updateOne({
+      verified_at: null,
+      verified: false,
+      verification_code: code,
+      address,
+    });
+
+    const email_sent = await account_helper.send_verification_mail(
+      verify_email.email,
+      code,
+    );
+
+    if (email_sent.success) return main_helper.success_response(res, "email sent");
+    return main_helper.error.response(res, "email resend failed");
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_response(res, "email resend failed");
+  }
+}
+
 module.exports = {
   update_meta,
   verify,
+  resend_email,
 };

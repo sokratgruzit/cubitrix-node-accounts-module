@@ -6,7 +6,7 @@ const account_controller = require("../controllers/accounts_controller");
 const account_meta_controller = require("../controllers/accounts_meta_controller");
 // const validation = require('../middleware/validation_middleware');
 
-const g2faController = require("../controllers/google_2fa_controller");
+const google_2fa_controller = require("../controllers/google_2fa_controller");
 // const validation = require('../middleware/validation_middleware');
 
 const is_authenticated = require("../middleware/is_authenticated");
@@ -20,18 +20,16 @@ router.post("/login", account_controller.login_account);
 router.post("/update_profile", account_meta_controller.update_meta);
 router.post("/verify", account_meta_controller.verify);
 router.post("/recovery/login", account_controller.login_with_email);
+router.post("/resend-email", account_meta_controller.resend_email);
 
 router.post("/get_account", account_controller.get_account);
-router.post(
-  "/update_profile_auth",
-  account_controller.update_auth_account_password
-);
+router.post("/update_profile_auth", account_controller.update_auth_account_password);
 
 // google 2 factore auth routes
-router.post("/otp/generate", g2faController.generate_OTP);
-router.post("/otp/verify", g2faController.verify_OTP);
-router.post("/otp/validate", g2faController.validate_OTP);
-router.post("/otp/disable", g2faController.disable_OTP);
+router.post("/otp/generate", google_2fa_controller.generate_OTP);
+router.post("/otp/verify", google_2fa_controller.verify_OTP);
+router.post("/otp/validate", google_2fa_controller.validate_OTP);
+router.post("/otp/disable", google_2fa_controller.disable_OTP);
 
 router.get("/test", (req, res) => {
   console.log(123);
