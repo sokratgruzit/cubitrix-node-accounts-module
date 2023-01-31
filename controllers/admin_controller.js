@@ -133,9 +133,6 @@ async function handle_filter(req, res) {
         ]);
         total_pages = await accounts.count(data);
       }
-      result = await accounts.populate(result, {
-        path: "inner_accounts.account_type_id",
-      });
     }
     if (req_type === "transactions") {
       if (req_filter && !isEmpty(req_filter)) {
