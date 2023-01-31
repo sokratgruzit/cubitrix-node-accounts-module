@@ -101,7 +101,7 @@ async function update_meta(req, res) {
           if (response.success) {
             return main_helper.success_response(res, response?.message);
           }
-          return main_helper.error_response(res, response);
+          return main_helper.error_response(res, response?.message);
         }
         return main_helper.success_response(res, "updated");
       }
