@@ -123,53 +123,44 @@ async function handle_filter(req, res) {
           search_query = {};
         }
         console.log(search_query);
-        result = await accounts
+        main_result = await accounts
           .find(search_query)
           .sort({ cteatedAt: "desc" })
           .limit(limit)
           .skip(limit * (req_page - 1));
         total_pages = await accounts.count(search_query);
       } else {
-        result = await accounts.aggregate([
-          {
-            $lookup: {
-              from: "accounts",
-              localField: "address",
-              foreignField: "account_owner",
-              pipeline: [
-                {
-                  $lookup: {
-                    from: "users",
-                    let: { userId: "$_id" },
-                    pipeline: [
-                      { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
-                      { $project: { firstName: 1 } },
-                    ],
-                    as: "user",
-                  },
-                },
-              ],
-              as: "inner_accounts",
-            },
-          },
-          {
-            $lookup: {
-              from: "account_types",
-              localField: "account_type_id",
-              foreignField: "_id",
-              as: "account_type_id",
-            },
-          },
-
-          {
-            $limit: limit,
-          },
-        ]);
+        main_result = await accounts
+          .find(data)
+          .sort({ cteatedAt: "desc" })
+          .limit(limit)
+          .skip(limit * (req_page - 1));
         total_pages = await accounts.count(data);
       }
-      // result = await accounts.populate(result, {
-      //   path: "account_type_id",
-      // });
+      main_result = await accounts.populate(main_result, {
+        path: "account_type_id",
+      });
+      let test = [];
+      for (let i = 0; i < main_result.length; i++) {
+        let account_inners = await accounts.find({
+          account_owner: main_result[i]["address"],
+        });
+        account_inners = await accounts.populate(account_inners, {
+          path: "account_type_id",
+        });
+        test[main_result[i]["address"]] = [];
+        for (let k = 0; k < account_inners.length; k++) {
+          let account_inner = account_inners[k];
+          // console.log(account_inner?.account_type_id?.name, typeof one_result);
+          // Object.assign(one_result, { b: 2 }, { c: 3 });
+          test[main_result[i]["address"]][
+            account_inner?.account_type_id?.name
+          ] = account_inner;
+        }
+        main_result[i]["accounts"] = test;
+      }
+      console.log(main_result, test);
+      result = main_result;
     }
     if (req_type === "transactions") {
       if (req_filter && !isEmpty(req_filter)) {
