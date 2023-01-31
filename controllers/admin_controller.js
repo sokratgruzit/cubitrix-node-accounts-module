@@ -103,20 +103,18 @@ async function handle_filter(req, res) {
               from: "accounts",
               localField: "address",
               foreignField: "account_owner",
+              as: "inner_accounts",
               pipeline: [
                 {
                   $lookup: {
                     from: "account_types",
-                    let: { userId: "$_id" },
-                    pipeline: [
-                      { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
-                      { $project: { firstName: 1 } },
-                    ],
-                    as: "user",
+                    localField: "account_type_id",
+                    foreignField: "_id",
+                    as: "account_type_id",
                   },
                 },
+                { $unwind: "$account_type_id" },
               ],
-              as: "inner_accounts",
             },
           },
           {
@@ -127,6 +125,7 @@ async function handle_filter(req, res) {
               as: "account_type_id",
             },
           },
+          { $unwind: "$account_type_id" },
 
           {
             $limit: limit,
@@ -134,9 +133,9 @@ async function handle_filter(req, res) {
         ]);
         total_pages = await accounts.count(data);
       }
-      // result = await accounts.populate(result, {
-      //   path: "account_type_id",
-      // });
+      result = await accounts.populate(result, {
+        path: "inner_accounts.account_type_id",
+      });
     }
     if (req_type === "transactions") {
       if (req_filter && !isEmpty(req_filter)) {
