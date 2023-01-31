@@ -98,6 +98,7 @@ async function handle_filter(req, res) {
         total_pages = await accounts.count(search_query);
       } else {
         result = await accounts.aggregate([
+          { $match: { account_owner: "" } },
           {
             $lookup: {
               from: "accounts",
@@ -126,12 +127,15 @@ async function handle_filter(req, res) {
             },
           },
           { $unwind: "$account_type_id" },
-
           {
-            $limit: limit,
+            $limit: limit + limit * (req_page - 1),
+          },
+          {
+            $skip: limit * (req_page - 1),
           },
         ]);
-        total_pages = await accounts.count(data);
+        console.log(limit * (req_page - 1));
+        total_pages = await accounts.count({ account_owner: "" });
       }
     }
     if (req_type === "transactions") {
