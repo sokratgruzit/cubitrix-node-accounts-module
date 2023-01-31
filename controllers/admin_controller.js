@@ -9,39 +9,6 @@ const account_helper = require("../helpers/accounts");
 
 require("dotenv").config();
 
-async function get_accounts(req, res) {
-  try {
-    let options = {
-      limit: req.query.limit || 2,
-      page: req.query.page || 2,
-    };
-    let results = await accounts.aggregate([
-      {
-        $lookup: {
-          from: "account_metas",
-          localField: "address",
-          foreignField: "address",
-          as: "meta",
-        },
-      },
-    ]);
-    results = await accounts.aggregatePaginate(results, options);
-    results = await accounts.populate(results, {
-      path: "account_type_id",
-    });
-
-    res.status(200).json(
-      main_helper.return_data({
-        status: true,
-        data: { accounts: results },
-      })
-    );
-  } catch (e) {
-    console.log(e);
-    return main_helper.error_response(res, "error getting accounts");
-  }
-}
-
 async function handle_filter(req, res) {
   try {
     let result,
@@ -139,7 +106,7 @@ async function handle_filter(req, res) {
               pipeline: [
                 {
                   $lookup: {
-                    from: "users",
+                    from: "account_types",
                     let: { userId: "$_id" },
                     pipeline: [
                       { $match: { $expr: { $eq: ["$_id", "$$userId"] } } },
@@ -321,6 +288,5 @@ function isEmpty(obj) {
 }
 
 module.exports = {
-  get_accounts,
   handle_filter,
 };
