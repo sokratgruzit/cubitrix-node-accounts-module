@@ -1,4 +1,4 @@
-const { account_meta, verified_emails } = require("@cubitrix/models");
+const { account_meta, verified_emails, account_auth } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 require("dotenv").config();
@@ -209,8 +209,54 @@ async function resend_email(req, res) {
   }
 }
 
+async function get_reset_password_email(req, res) {
+  try {
+    let { address, email } = req.body;
+
+    const meta = await account_meta.findOne({ email });
+
+    if (!meta) return main_helper.error_response(res, "No such email found");
+
+    const code = await account_helper.generate_verification_code();
+
+    await account_auth.findOneAndUpdate(
+      { address: meta.address },
+      { password_reset_code: code },
+    );
+
+    const response = await account_helper.send_reset_password_email(email, code);
+
+    if (response.success)
+      main_helper.success_response(res, "You will receive a reset email");
+
+    main_helper.error_response(res, `Email couldn't be sent`);
+  } catch (e) {
+    main_helper.error_response(res, e);
+  }
+}
+
+async function reset_password(req, res) {
+  try {
+    let { code, password } = req.body;
+
+    if (!code) return main_helper.error_response(res, "code required");
+    const updated = await account_auth.findOneAndUpdate(
+      { password_reset_code: code },
+      { password_reset_code: "", password: password },
+    );
+
+    if (!updated) main_helper.error_response(res, "failed to update password");
+
+    return main_helper.success_response(res, "password updated");
+  } catch (e) {
+    return main_helper.error_response(res, e?.message);
+  }
+}
+
 module.exports = {
   update_meta,
   verify,
   resend_email,
+  get_reset_password_email,
+  reset_password,
 };

@@ -154,12 +154,39 @@ async function send_verification_mail(email, verification_code) {
   return response;
 }
 
-async function send_mail() {}
+async function send_reset_password_email(email, verification_code) {
+  var transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.SENDER_EMAIL,
+      pass: process.env.SENDER_EMAIL_PASSWORD,
+    },
+  });
+
+  var mailOptions = {
+    from: process.env.SENDER_EMAIL,
+    to: email,
+    subject: "Reset Password",
+    html: email_helper.reset_password_template(
+      process.env.FRONTEND_URL + "/reset-password/" + verification_code,
+    ),
+  };
+
+  let response;
+  await transporter.sendMail(mailOptions).catch((e) => {
+    response = main_helper.error_message("sending email failed");
+  });
+  response = main_helper.success_message("Email sent");
+
+  return response;
+}
+
 module.exports = {
   check_account_meta_exists,
   check_account_exists,
   get_type_id,
   generate_verification_code,
   check_and_send_verification_email,
+  send_reset_password_email,
   send_verification_mail,
 };
