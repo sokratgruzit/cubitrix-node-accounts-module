@@ -19,15 +19,19 @@ async function handle_filter(req, res) {
       select_value,
       final_value,
       parent_account = [],
+      parent_select_account = [],
       child_acocunts = [],
+      child_select_acocunts = [],
       all_accounts_list,
+      select_accounts = [],
+      all_select_accounts_list,
       all_value = [],
       account_type_id;
     const req_body = await req.body;
     const req_type = req_body.type;
     const req_page = req_body.page ? req_body.page : 1;
     const req_filter = req_body.filter;
-    const limit = 2;
+    const limit = 10;
     let { type, page, filter, ...data } = req_body;
 
     if (data.search) {
@@ -59,7 +63,6 @@ async function handle_filter(req, res) {
           search_option = req_filter?.search?.option;
         }
         search_value = req_filter?.search?.value;
-        console.log(search_option, search_value);
         if (search_value) {
           if (search_option == "all") {
             all_accounts_list = await accounts.find({
@@ -72,8 +75,6 @@ async function handle_filter(req, res) {
               let one_account = all_accounts_list[i];
               if (one_account.account_owner == "") {
                 parent_account.push(one_account.address);
-              } else {
-                child_acocunts.push(one_account.account_owner);
               }
             }
             all_value.push({ address: { $in: parent_account } });
@@ -83,10 +84,31 @@ async function handle_filter(req, res) {
             });
           }
         }
-        if (!search_query) {
-          search_query = {};
+        if (select_value && select_value != "all") {
+          all_select_accounts_list = await accounts.find({
+            account_type_id: account_type_id,
+          });
+          for (let i = 0; i < all_select_accounts_list.length; i++) {
+            let one_account = all_select_accounts_list[i];
+            if (one_account.account_owner != "") {
+              parent_select_account.push(one_account.account_owner);
+            }
+          }
+          if (all_value && !isEmpty(all_value)) {
+            for (let k = 0; k < parent_select_account.length; k++) {
+              select_accounts.push(parent_select_account[k]);
+            }
+
+            all_value = [{ address: { $in: select_accounts } }];
+          } else {
+            all_value.push({ address: { $in: parent_select_account } });
+          }
         }
-        console.log(search_query);
+        if (!all_value && !isEmpty(all_value)) {
+          search_query = {};
+        } else {
+          search_query = { $or: all_value };
+        }
         result = await accounts.aggregate([
           { $match: search_query },
           {
@@ -132,7 +154,7 @@ async function handle_filter(req, res) {
               account_owner: "",
             },
           },
-          // { $sort: { createdAt: -1 } },
+          { $sort: { createdAt: -1 } },
           {
             $lookup: {
               from: "accounts",
@@ -168,7 +190,6 @@ async function handle_filter(req, res) {
             $skip: limit * (req_page - 1),
           },
         ]);
-        console.log(limit * (req_page - 1));
         total_pages = await accounts.count({ account_owner: "" });
       }
     }
