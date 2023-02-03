@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express();
 const roles_controller = require("../controllers/roles_controller");
-const admin_controller = require("../controllers/admin_controller");
 const account_controller = require("../controllers/accounts_controller");
 const account_meta_controller = require("../controllers/accounts_meta_controller");
 // const validation = require('../middleware/validation_middleware');
@@ -40,6 +39,5 @@ router.post("/koko", account_controller.create_different_accounts);
 // roles
 router.get("/roles", roles_controller.index);
 // get all account
-router.post("/filter", admin_controller.handle_filter);
 
 module.exports = router;
