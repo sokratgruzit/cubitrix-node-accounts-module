@@ -20,6 +20,11 @@ router.post("/update_profile", account_meta_controller.update_meta);
 router.post("/verify", account_meta_controller.verify);
 router.post("/recovery/login", account_controller.login_with_email);
 router.post("/resend-email", account_meta_controller.resend_email);
+router.post(
+  "/get-reset-password-email",
+  account_meta_controller.get_reset_password_email,
+);
+router.post("/reset-password", account_meta_controller.reset_password);
 
 router.post("/get_account", account_controller.get_account);
 router.post("/update_profile_auth", account_controller.update_auth_account_password);
