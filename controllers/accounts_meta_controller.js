@@ -227,11 +227,11 @@ async function get_reset_password_email(req, res) {
     const response = await account_helper.send_reset_password_email(email, code);
 
     if (response.success)
-      main_helper.success_response(res, "You will receive a reset email");
+      return main_helper.success_response(res, "You will receive a reset email");
 
-    main_helper.error_response(res, `Email couldn't be sent`);
+    return main_helper.error_response(res, `Email couldn't be sent`);
   } catch (e) {
-    main_helper.error_response(res, e);
+    return main_helper.error_response(res, e);
   }
 }
 
@@ -245,7 +245,7 @@ async function reset_password(req, res) {
       { password_reset_code: "", password: password },
     );
 
-    if (!updated) main_helper.error_response(res, "failed to update password");
+    if (!updated) return main_helper.error_response(res, "failed to update password");
 
     return main_helper.success_response(res, "password updated");
   } catch (e) {
