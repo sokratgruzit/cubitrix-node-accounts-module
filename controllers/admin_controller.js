@@ -16,17 +16,22 @@ async function handle_filter(req, res) {
       search_value,
       search_option,
       search_query,
-      main_result,
-      one_result,
       select_value,
       final_value,
+      parent_account = [],
+      parent_select_account = [],
+      child_acocunts = [],
+      child_select_acocunts = [],
+      all_accounts_list,
+      select_accounts = [],
+      all_select_accounts_list,
       all_value = [],
       account_type_id;
     const req_body = await req.body;
     const req_type = req_body.type;
     const req_page = req_body.page ? req_body.page : 1;
     const req_filter = req_body.filter;
-    const limit = 2;
+    const limit = 10;
     let { type, page, filter, ...data } = req_body;
 
     if (data.search) {
@@ -60,45 +65,52 @@ async function handle_filter(req, res) {
         search_value = req_filter?.search?.value;
         if (search_value) {
           if (search_option == "all") {
-            all_value.push(
-              { account_owner: { $regex: search_value, $options: "i" } },
-              { address: { $regex: search_value, $options: "i" } }
-            );
+            all_accounts_list = await accounts.find({
+              $or: [
+                { address: { $regex: search_value, $options: "i" } },
+                { account_owner: { $regex: search_value, $options: "i" } },
+              ],
+            });
+            for (let i = 0; i < all_accounts_list.length; i++) {
+              let one_account = all_accounts_list[i];
+              if (one_account.account_owner == "") {
+                parent_account.push(one_account.address);
+              }
+            }
+            all_value.push({ address: { $in: parent_account } });
           } else {
             all_value.push({
               [search_option]: { $regex: search_value, $options: "i" },
             });
           }
         }
+        if (select_value && select_value != "all") {
+          all_select_accounts_list = await accounts.find({
+            account_type_id: account_type_id,
+          });
+          for (let i = 0; i < all_select_accounts_list.length; i++) {
+            let one_account = all_select_accounts_list[i];
+            if (one_account.account_owner != "") {
+              parent_select_account.push(one_account.account_owner);
+            }
+          }
+          if (all_value && !isEmpty(all_value)) {
+            for (let k = 0; k < parent_select_account.length; k++) {
+              select_accounts.push(parent_select_account[k]);
+            }
 
-        if (select_value) {
-          if (!isEmpty(all_value) && all_value.length > 0) {
-            search_query = {
-              $and: [{ account_type_id: account_type_id }, { $or: all_value }],
-            };
+            all_value = [{ address: { $in: select_accounts } }];
           } else {
-            search_query = {
-              $and: [{ account_type_id: account_type_id }],
-            };
-          }
-        } else {
-          if (!isEmpty(all_value) && all_value.length > 0) {
-            search_query = { $or: all_value };
+            all_value.push({ address: { $in: parent_select_account } });
           }
         }
-        if (!search_query) {
+        if (!all_value && !isEmpty(all_value)) {
           search_query = {};
+        } else {
+          search_query = { $or: all_value };
         }
-        console.log(search_query);
-        result = await accounts
-          .find(search_query)
-          .sort({ cteatedAt: "desc" })
-          .limit(limit)
-          .skip(limit * (req_page - 1));
-        total_pages = await accounts.count(search_query);
-      } else {
         result = await accounts.aggregate([
-          { $match: { account_owner: "" } },
+          { $match: search_query },
           {
             $lookup: {
               from: "accounts",
@@ -134,7 +146,50 @@ async function handle_filter(req, res) {
             $skip: limit * (req_page - 1),
           },
         ]);
-        console.log(limit * (req_page - 1));
+        total_pages = await accounts.count(search_query);
+      } else {
+        result = await accounts.aggregate([
+          {
+            $match: {
+              account_owner: "",
+            },
+          },
+          { $sort: { createdAt: -1 } },
+          {
+            $lookup: {
+              from: "accounts",
+              localField: "address",
+              foreignField: "account_owner",
+              as: "inner_accounts",
+              pipeline: [
+                {
+                  $lookup: {
+                    from: "account_types",
+                    localField: "account_type_id",
+                    foreignField: "_id",
+                    as: "account_type_id",
+                  },
+                },
+                { $unwind: "$account_type_id" },
+              ],
+            },
+          },
+          {
+            $lookup: {
+              from: "account_types",
+              localField: "account_type_id",
+              foreignField: "_id",
+              as: "account_type_id",
+            },
+          },
+          { $unwind: "$account_type_id" },
+          {
+            $limit: limit + limit * (req_page - 1),
+          },
+          {
+            $skip: limit * (req_page - 1),
+          },
+        ]);
         total_pages = await accounts.count({ account_owner: "" });
       }
     }
