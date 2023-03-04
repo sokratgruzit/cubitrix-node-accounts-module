@@ -8,7 +8,7 @@ const cors_options = require("./config/cors_options");
 const app = express();
 app.use(express.json({ extended: true }));
 app.use(cors(cors_options));
-app.use("/accounts", router);
+app.use("/api/accounts", router);
 
 // console.log(accounts.index("jinx1"));
 // app.use('/accounts', router)

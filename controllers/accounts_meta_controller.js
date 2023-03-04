@@ -24,7 +24,6 @@ async function update_meta(req, res) {
     let account_meta_exists = await account_meta.findOne({
       address,
     });
-
     if (account_meta_exists) {
       if (account_meta_exists.email && account_meta_exists?.email === email) {
         await account_meta_exists.updateOne({
@@ -91,6 +90,7 @@ async function update_meta(req, res) {
         nationality,
         avatar,
       );
+      console.log(account_saved);
 
       if (account_saved.success) {
         if (email) {
@@ -105,9 +105,8 @@ async function update_meta(req, res) {
         }
         return main_helper.success_response(res, "updated");
       }
+      return main_helper.error_response(res, account_saved.message);
     }
-
-    return main_helper.error_response(res, "Error while saving");
   } catch (e) {
     return main_helper.error_response(res, main_helper.error_message(e.message));
   }
@@ -211,7 +210,7 @@ async function resend_email(req, res) {
 
 async function get_reset_password_email(req, res) {
   try {
-    let { address, email } = req.body;
+    let { email } = req.body;
 
     const meta = await account_meta.findOne({ email });
 
