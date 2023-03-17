@@ -22,10 +22,7 @@ async function login_with_email(req, res) {
   let { email, password } = req.body;
   const account = await account_meta.findOne({ email });
   if (!account) {
-    return main_helper.error_response(
-      res,
-      "Token is invalid or user doesn't exist"
-    );
+    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
   const found = await account_auth.findOne({ address: account.address });
@@ -34,8 +31,7 @@ async function login_with_email(req, res) {
   }
   if (found.password) {
     const pass_match = await found.match_password(password);
-    if (!pass_match)
-      return main_helper.error_response(res, "incorrect password");
+    if (!pass_match) return main_helper.error_response(res, "incorrect password");
 
     if (found.otp_enabled)
       return main_helper.success_response(res, {
@@ -43,13 +39,9 @@ async function login_with_email(req, res) {
         address: account.address,
       });
 
-    const token = jwt.sign(
-      { address: account.address, email: email },
-      "jwt_secret",
-      {
-        expiresIn: "24h",
-      }
-    );
+    const token = jwt.sign({ address: account.address, email: email }, "jwt_secret", {
+      expiresIn: "24h",
+    });
     res.cookie("Access-Token", token, {
       sameSite: "none",
       httpOnly: true,
@@ -69,46 +61,40 @@ async function login_account(req, res) {
   try {
     let { address } = req.body;
 
-    if (address == undefined) {
+    if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields")
+        main_helper.error_message("Fill all fields"),
       );
     }
-
     address = address.toLowerCase();
 
-    let type_id = await account_helper.get_type_id("user_current");
-    let account_exists = await account_helper.check_account_exists(
-      address,
-      type_id
-    );
+    const typeResults = await Promise.all([
+      account_helper.get_type_id("external"),
+      account_helper.get_type_id("system"),
+    ]);
+
+    let type_id = typeResults[0];
+    let type_id_system = typeResults[1];
+
+    let account_exists = await account_helper.check_account_exists(address, type_id);
 
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
     }
 
-    let account_saved = await save_account(address, type_id, 0, "user", "");
-    let account_meta_data = await account_meta.findOne({ address: address });
-    await account_auth.create({ address });
+    const newAddress = await generate_new_address();
 
-    if (account_meta_data && account_meta_data.email) {
-      let verified = await verified_emails.findOne({
-        address: address,
-        email: account_meta_data.email,
-      });
-    }
+    await Promise.all([
+      save_account(address.toLowerCase(), type_id, 0, "external", ""),
+      save_account(newAddress.toLowerCase(), type_id_system, 0, "system", address),
+      account_auth.create({ address }),
+      account_meta.create({ address }),
+    ]);
 
-    if (account_saved.success) {
-      return main_helper.success_response(res, account_saved);
-    }
-
-    return main_helper.error_response(res, account_exists);
+    return main_helper.success_response(res, "success");
   } catch (e) {
-    return main_helper.error_response(
-      res,
-      main_helper.error_message(e.message)
-    );
+    return main_helper.error_response(res, main_helper.error_message(e?.message));
   }
 }
 // create different accounts like loan,
@@ -121,28 +107,18 @@ async function create_different_accounts(req, res) {
     if (address == undefined) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields")
+        main_helper.error_message("missing some fields"),
       );
     }
 
     let type_id = await account_helper.get_type_id(type);
-    let account_exists = await account_helper.check_account_exists(
-      address,
-      type_id
-    );
-    let account_exists_with_type =
-      await account_helper.check_account_with_type_exists(address, type_id);
+    let account_exists = await account_helper.check_account_exists(address, type_id);
 
-    if (account_exists.success || account_exists_with_type.success) {
-      if (account_exists.success) {
-        return main_helper.success_response(res, account_exists);
-      }
-      if (account_exists_with_type.success) {
-        return main_helper.success_response(res, account_exists_with_type);
-      }
+    if (account_exists.success) {
+      return main_helper.success_response(res, account_exists);
     }
     let account_web3 = new web3_accounts(
-      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"
+      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
     );
     let create_account = account_web3.create();
     let created_address = create_account.address;
@@ -155,7 +131,7 @@ async function create_different_accounts(req, res) {
       type_id,
       0,
       type,
-      address
+      address,
     );
 
     res.send(account_saved);
@@ -164,13 +140,7 @@ async function create_different_accounts(req, res) {
   }
 }
 // saving account in db
-async function save_account(
-  address,
-  type_id,
-  balance,
-  account_category,
-  account_owner
-) {
+async function save_account(address, type_id, balance, account_category, account_owner) {
   try {
     let save_user = await accounts.create({
       address: address,
@@ -180,10 +150,6 @@ async function save_account(
       account_owner: account_owner,
     });
 
-    // await account_auth.create({
-    //   address,
-    // });
-
     if (save_user) {
       return main_helper.success_message("User saved");
     }
@@ -192,6 +158,19 @@ async function save_account(
   } catch (e) {
     return main_helper.error_message(e.message);
   }
+}
+
+async function generate_new_address() {
+  let account_web3 = new web3_accounts(
+    "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
+  );
+  let create_account = account_web3.create();
+  let created_address = create_account.address;
+  await accounts_keys.create({
+    address: created_address,
+    object_value: create_account,
+  });
+  return created_address;
 }
 
 async function update_auth_account_password(req, res) {
@@ -219,8 +198,7 @@ async function update_auth_account_password(req, res) {
         }
         if (user.password) {
           const pass_match = await user.match_password(currentPassword);
-          if (!pass_match)
-            return main_helper.error_response(res, "incorrect password");
+          if (!pass_match) return main_helper.error_response(res, "incorrect password");
         }
         await user.updateOne({ password: newPassword });
         return main_helper.success_response(res, "password updated");
@@ -266,8 +244,50 @@ async function get_account(req, res) {
       main_helper.return_data({
         status: true,
         data: { accounts: results },
-      })
+      }),
     );
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_response(res, "error getting accounts");
+  }
+}
+
+async function activate_account_via_staking(req, res) {
+  try {
+    let { address } = req.body;
+
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("missing some fields"),
+      );
+    }
+
+    address = address.toLowerCase();
+
+    const account = await accounts.findOne({ address: address });
+
+    if (!account) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("account not found"),
+      );
+    }
+
+    const updatedSystemAccount = await accounts.findOneAndUpdate(
+      { account_owner: address },
+      { active: true },
+      { new: true },
+    );
+
+    if (!updatedSystemAccount) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("account not found"),
+      );
+    }
+
+    return main_helper.success_response(res, "account activated");
   } catch (e) {
     console.log(e);
     return main_helper.error_response(res, "error getting accounts");
@@ -281,4 +301,5 @@ module.exports = {
   get_account,
   update_auth_account_password,
   create_different_accounts,
+  activate_account_via_staking,
 };
