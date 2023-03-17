@@ -130,9 +130,16 @@ async function create_different_accounts(req, res) {
       address,
       type_id
     );
+    let account_exists_with_type =
+      await account_helper.check_account_with_type_exists(address, type_id);
 
-    if (account_exists.success) {
-      return main_helper.success_response(res, account_exists);
+    if (account_exists.success || account_exists_with_type.success) {
+      if (account_exists.success) {
+        return main_helper.success_response(res, account_exists);
+      }
+      if (account_exists_with_type.success) {
+        return main_helper.success_response(res, account_exists_with_type);
+      }
     }
     let account_web3 = new web3_accounts(
       "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"

@@ -43,6 +43,23 @@ async function check_account_exists(address, type_id) {
     return main_helper.error_message(e.message);
   }
 }
+// method to check if account already exists in db
+async function check_account_with_type_exists(address, type_id) {
+  try {
+    let account = await accounts.findOne({
+      account_owner: address,
+      account_type_id: type_id,
+    });
+
+    if (account && account?.address) {
+      return main_helper.success_message("Account found");
+    } else {
+      return main_helper.error_message("Account not Found");
+    }
+  } catch (e) {
+    return main_helper.error_message(e.message);
+  }
+}
 // getting type id from db
 async function get_type_id(type_name) {
   try {
@@ -90,7 +107,9 @@ async function check_and_send_verification_email(address, email) {
   const verified_email_address = results[1].value;
   const verified_emails_all = results[2].value;
 
-  const email_already_verified = verified_emails_all.some((obj) => obj.verified === true);
+  const email_already_verified = verified_emails_all.some(
+    (obj) => obj.verified === true
+  );
 
   if (email_already_verified)
     return main_helper.error_message("email already exists & is verified");
@@ -104,7 +123,10 @@ async function check_and_send_verification_email(address, email) {
       address,
     });
 
-    let email_sent = await send_verification_mail(email, email_verification_code);
+    let email_sent = await send_verification_mail(
+      email,
+      email_verification_code
+    );
 
     if (email_sent.success) {
       return main_helper.success_message("email sent");
@@ -141,7 +163,7 @@ async function send_verification_mail(email, verification_code) {
     to: email,
     subject: "Verification Email",
     html: email_helper.verification_template(
-      process.env.FRONTEND_URL + "/verify/" + verification_code,
+      process.env.FRONTEND_URL + "/verify/" + verification_code
     ),
   };
 
@@ -168,7 +190,7 @@ async function send_reset_password_email(email, verification_code) {
     to: email,
     subject: "Reset Password",
     html: email_helper.reset_password_template(
-      process.env.FRONTEND_URL + "/reset-password/" + verification_code,
+      process.env.FRONTEND_URL + "/reset-password/" + verification_code
     ),
   };
 
@@ -189,4 +211,5 @@ module.exports = {
   check_and_send_verification_email,
   send_reset_password_email,
   send_verification_mail,
+  check_account_with_type_exists,
 };
