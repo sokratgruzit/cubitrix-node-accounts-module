@@ -303,6 +303,30 @@ async function activate_account_via_staking(req, res) {
   }
 }
 
+async function activate_account(req, res) {
+  try {
+    let { address } = req.body;
+    const account = await accounts.findOne({ account_owner: address });
+
+    if (!account) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("account not found"),
+      );
+    }
+
+    await accounts.findOneAndUpdate(
+      { account_owner: address },
+      { active: true },
+      { new: true },
+    );
+
+    return main_helper.success_response(res, "account activated");
+  } catch (e) {
+    return main_helper.error_response(res, "error activating accounts");
+  }
+}
+
 module.exports = {
   index,
   login_account,
@@ -311,4 +335,5 @@ module.exports = {
   update_auth_account_password,
   create_different_accounts,
   activate_account_via_staking,
+  activate_account,
 };

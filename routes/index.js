@@ -25,6 +25,7 @@ router.post(
   account_meta_controller.get_reset_password_email,
 );
 router.post("/reset-password", account_meta_controller.reset_password);
+router.post("/activate-account", account_controller.activate_account);
 
 router.post("/get_account", account_controller.get_account);
 router.post("/update_profile_auth", account_controller.update_auth_account_password);
