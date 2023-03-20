@@ -83,14 +83,23 @@ async function login_account(req, res) {
       return main_helper.success_response(res, account_exists);
     }
 
-    const newAddress = await generate_new_address();
+    const accountSaved = await save_account(
+      address.toLowerCase(),
+      type_id,
+      0,
+      "external",
+      "",
+    );
 
-    await Promise.all([
-      save_account(address.toLowerCase(), type_id, 0, "external", ""),
-      save_account(newAddress.toLowerCase(), type_id_system, 0, "system", address),
-      account_auth.create({ address }),
-      account_meta.create({ address }),
-    ]);
+    if (accountSaved.success) {
+      const newAddress = await generate_new_address();
+
+      await Promise.all([
+        save_account(newAddress.toLowerCase(), type_id_system, 0, "system", address),
+        account_auth.create({ address }),
+        account_meta.create({ address }),
+      ]);
+    }
 
     return main_helper.success_response(res, "success");
   } catch (e) {
