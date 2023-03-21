@@ -10,6 +10,12 @@ const {
 const jwt = require("jsonwebtoken");
 const web3_accounts = require("web3-eth-accounts");
 
+const Web3 = require("web3");
+const web3 = new Web3("https://data-seed-prebsc-1-s1.binance.org:8545");
+
+const WBNB = require("../abi/WBNB.json");
+const STACK_ABI = require("../abi/stack.json");
+
 require("dotenv").config();
 
 // test function that returns name
@@ -231,13 +237,21 @@ async function get_account(req, res) {
     address = address.toLowerCase();
 
     let results = await accounts.aggregate([
-      { $match: { address: address.toLowerCase() } },
+      { $match: { address: address } },
       {
         $lookup: {
           from: "account_metas",
           localField: "address",
           foreignField: "address",
           as: "meta",
+        },
+      },
+      {
+        $lookup: {
+          from: "accounts",
+          localField: "address",
+          foreignField: "account_owner",
+          as: "system",
         },
       },
     ]);
@@ -306,6 +320,15 @@ async function activate_account_via_staking(req, res) {
 async function activate_account(req, res) {
   try {
     let { address } = req.body;
+
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("missing some fields"),
+      );
+    }
+    address = address.toLowerCase();
+
     const account = await accounts.findOne({ account_owner: address });
 
     if (!account) {
@@ -315,15 +338,26 @@ async function activate_account(req, res) {
       );
     }
 
-    await accounts.findOneAndUpdate(
-      { account_owner: address },
-      { active: true },
-      { new: true },
-    );
+    const tokenAddress = "0xd472C9aFa90046d42c00586265A3F62745c927c0"; // Staking contract Address
 
-    return main_helper.success_response(res, "account activated");
+    const tokenContract = new web3.eth.Contract(STACK_ABI, tokenAddress);
+
+    tokenContract.methods.stakersRecord(address, "0").call(async (error, result) => {
+      if (error) {
+        console.log(error);
+        return main_helper.error_response(res, "something went wrong");
+      } else {
+        const newAcc = await accounts.findOneAndUpdate(
+          { account_owner: address },
+          { active: true, balance: account.balance + result.amount / 10 ** 18 },
+          { new: true },
+        );
+        return main_helper.success_response(res, { account: newAcc });
+      }
+    });
   } catch (e) {
-    return main_helper.error_response(res, "error activating accounts");
+    console.log(e);
+    return main_helper.error_response(res, "error updating accounts");
   }
 }
 
