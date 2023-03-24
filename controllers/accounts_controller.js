@@ -156,6 +156,7 @@ async function create_different_accounts(req, res) {
 }
 // saving account in db
 async function save_account(address, type_id, balance, account_category, account_owner) {
+  address = address.toLowerCase();
   try {
     let save_user = await accounts.create({
       address: address,
