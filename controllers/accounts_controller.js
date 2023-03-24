@@ -342,18 +342,43 @@ async function activate_account(req, res) {
 
     const tokenContract = new web3.eth.Contract(STACK_ABI, tokenAddress);
 
-    tokenContract.methods.stakersRecord(address, "0").call(async (error, result) => {
-      if (error) {
-        console.log(error);
-        return main_helper.error_response(res, "something went wrong");
-      } else {
-        const newAcc = await accounts.findOneAndUpdate(
+    let condition = true;
+    let loopCount = -1;
+    let newestAccount = account;
+    while (condition) {
+      loopCount++;
+      const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
+
+      if (result.staketime == 0) {
+        condition = false;
+        break;
+      }
+
+      if (
+        newestAccount.staked.length === 0 ||
+        !newestAccount.staked.some((item) => item.staketime === result.staketime)
+      ) {
+        newestAccount = await accounts.findOneAndUpdate(
           { account_owner: address },
-          { active: true, balance: account.balance + result.amount / 10 ** 18 },
+          {
+            active: true,
+            $inc: { balance: result.amount / 10 ** 18 },
+            $push: {
+              staked: {
+                staketime: result.staketime,
+                amount: result.amount / 10 ** 18,
+                added: true,
+              },
+            },
+          },
           { new: true },
         );
-        return main_helper.success_response(res, { account: newAcc });
       }
+    }
+
+    return main_helper.success_response(res, {
+      message: "success",
+      account: newestAccount,
     });
   } catch (e) {
     console.log(e);
