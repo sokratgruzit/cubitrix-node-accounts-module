@@ -42,7 +42,7 @@ router.get("/test", (req, res) => {
 });
 
 router.post("/create_different_accounts", account_controller.create_different_accounts);
-// router.post("/open_utility_accounts", account_controller.open_utility_accounts);
+router.post("/manage_extensions", account_controller.manage_extensions);
 // roles
 router.get("/roles", roles_controller.index);
 // get all account

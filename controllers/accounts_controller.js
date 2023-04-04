@@ -444,6 +444,50 @@ async function activate_account(req, res) {
   }
 }
 
+async function manage_extensions(req, res) {
+  try {
+    let { address, extensions } = req.body;
+
+    if (!address || !extensions) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("missing some fields"),
+      );
+    }
+
+    address = address.toLowerCase();
+
+    const account = await accounts.findOne({ address: address });
+
+    if (!account) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("account not found"),
+      );
+    }
+
+    const updateObj = {};
+
+    for (const [key, value] of Object.entries(extensions)) {
+      updateObj[`extensions.${key}`] = value;
+    }
+
+    const updatedAccount = await accounts.findOneAndUpdate(
+      { address: address },
+      { $set: updateObj },
+      { new: true },
+    );
+
+    return main_helper.success_response(res, {
+      message: "success",
+      account: updatedAccount,
+    });
+  } catch (e) {
+    console.log(e.message);
+    return main_helper.error_response(res, "error updating accounts");
+  }
+}
+
 module.exports = {
   index,
   login_account,
@@ -453,5 +497,6 @@ module.exports = {
   create_different_accounts,
   activate_account_via_staking,
   activate_account,
+  manage_extensions,
   // open_utility_accounts,
 };
