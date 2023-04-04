@@ -3,10 +3,12 @@ const account_helper = require("../helpers/accounts");
 const {
   accounts,
   account_meta,
+  account_loan,
   accounts_keys,
   account_auth,
   verified_emails,
 } = require("@cubitrix/models");
+
 const jwt = require("jsonwebtoken");
 const web3_accounts = require("web3-eth-accounts");
 
@@ -127,10 +129,18 @@ async function create_different_accounts(req, res) {
     }
 
     let type_id = await account_helper.get_type_id(type);
-    let account_exists = await account_helper.check_account_exists(address, type_id);
+    // let account_exists = await account_helper.check_account_exists(address, type_id);
 
-    if (account_exists.success) {
-      return main_helper.success_response(res, account_exists);
+    let account_exists = await accounts.findOne({
+      account_owner: address,
+      account_type_id: type_id,
+    });
+
+    if (account_exists) {
+      return main_helper.success_response(res, {
+        message: "user already exists",
+        data: account_exists,
+      });
     }
     let account_web3 = new web3_accounts(
       "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
@@ -149,7 +159,7 @@ async function create_different_accounts(req, res) {
       address,
     );
 
-    res.send(account_saved);
+    res.status(200).send({ message: "account opened", data: account_saved });
   } catch (e) {
     console.log(e.message);
   }
@@ -164,6 +174,7 @@ async function save_account(address, type_id, balance, account_category, account
       balance: Number(balance),
       account_category: account_category,
       account_owner: account_owner,
+      active: true,
     });
 
     if (save_user) {
@@ -175,6 +186,52 @@ async function save_account(address, type_id, balance, account_category, account
     return main_helper.error_message(e.message);
   }
 }
+
+// async function open_utility_accounts(req, res) {
+//   try {
+//     let { address, accountType } = req.body;
+//     if (!address) {
+//       return main_helper.success_response(res, { message: "address is required" });
+//     }
+//     address = address.toLowerCase();
+
+//     if (!accountType) {
+//       return main_helper.success_response(res, { message: "account type is required" });
+//     }
+
+//     let mainAccountType;
+//     if (accountType === "loan") {
+//       mainAccountType = account_loan;
+//       console.log(mainAccountType, account_loan);
+//     } else {
+//       return main_helper.success_response(res, { message: "account type is not valid" });
+//     }
+
+//     const newAddress = await generate_new_address();
+
+//     const foundAccount = await mainAccountType.findOne({ account_owner: address });
+
+//     if (foundAccount) {
+//       return main_helper.success_response(res, { message: "Account already opened" });
+//     }
+
+//     const openedAccount = await mainAccountType.create({
+//       address: newAddress,
+//       account_owner: address,
+//       balance: 0,
+//     });
+
+//     return main_helper.success_response(res, {
+//       message: "Account opened successfully",
+//       data: openedAccount,
+//     });
+//   } catch (e) {
+//     console.log(e.message);
+//     return main_helper.error_response(res, {
+//       message: "could not open account try later",
+//     });
+//   }
+// }
 
 async function generate_new_address() {
   let account_web3 = new web3_accounts(
@@ -396,4 +453,5 @@ module.exports = {
   create_different_accounts,
   activate_account_via_staking,
   activate_account,
+  // open_utility_accounts,
 };
