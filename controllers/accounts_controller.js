@@ -457,7 +457,11 @@ async function manage_extensions(req, res) {
 
     address = address.toLowerCase();
 
-    const account = await accounts.findOne({ address: address });
+    const [account, accountSystem, accountMeta] = await Promise.all([
+      accounts.findOne({ address: address }),
+      accounts.findOne({ account_owner: address }),
+      account_meta.findOne({ address: address }),
+    ]);
 
     if (!account) {
       return main_helper.error_response(
@@ -466,10 +470,24 @@ async function manage_extensions(req, res) {
       );
     }
 
+    if (!accountMeta.email) {
+      //unverified so cant turn on
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("account not verified"),
+      );
+    }
+
     const updateObj = {};
 
     for (const [key, value] of Object.entries(extensions)) {
-      updateObj[`extensions.${key}`] = value;
+      if (accountSystem.active) {
+        updateObj[`extensions.${key}`] = value;
+      } else if (!accountSystem.active) {
+        if (key === "staking") {
+          updateObj[`extensions.${key}`] = value;
+        }
+      }
     }
 
     const updatedAccount = await accounts.findOneAndUpdate(
