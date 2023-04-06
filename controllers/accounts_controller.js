@@ -406,8 +406,7 @@ async function activate_account(req, res) {
 
     let condition = true;
     let newestAccount = account;
-    // let loopCount = newestAccount.staked.length - 1;
-    let loopCount = newestAccount.staked.length - 2;
+    let loopCount = newestAccount.staked.length - 1;
     while (condition) {
       loopCount++;
       const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
