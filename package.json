@@ -10,7 +10,6 @@
   "author": "jinx",
   "license": "MIT",
   "dependencies": {
-    "@cubitrix/models": "^0.0.41",
     "bcrypt": "^5.1.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -25,6 +24,10 @@
     "speakeasy": "^2.0.0",
     "web3": "^1.8.2",
     "web3-eth-accounts": "^1.8.1"
+  },
+  "peerDependencies": {
+    "@cubitrix/cubitrix-node-transactions-module": "^0.0.17",
+    "@cubitrix/models": "^0.0.41"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"

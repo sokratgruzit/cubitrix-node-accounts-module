@@ -9,6 +9,10 @@ const {
   verified_emails,
 } = require("@cubitrix/models");
 
+const {
+  create_deposit_transaction,
+} = require("@cubitrix/cubitrix-node-transactions-module");
+
 const jwt = require("jsonwebtoken");
 const web3_accounts = require("web3-eth-accounts");
 
@@ -401,8 +405,9 @@ async function activate_account(req, res) {
     const tokenContract = new web3.eth.Contract(STACK_ABI, tokenAddress);
 
     let condition = true;
-    let loopCount = -1;
     let newestAccount = account;
+    // let loopCount = newestAccount.staked.length - 1;
+    let loopCount = newestAccount.staked.length - 2;
     while (condition) {
       loopCount++;
       const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
@@ -430,6 +435,12 @@ async function activate_account(req, res) {
             },
           },
           { new: true },
+        );
+        await create_deposit_transaction(
+          address,
+          result.amount / 10 ** 18,
+          "ether",
+          "deposit",
         );
       }
     }
