@@ -169,7 +169,14 @@ async function create_different_accounts(req, res) {
   }
 }
 // saving account in db
-async function save_account(address, type_id, balance, account_category, account_owner) {
+async function save_account(
+  address,
+  type_id,
+  balance,
+  account_category,
+  account_owner,
+  active = true,
+) {
   address = address.toLowerCase();
   try {
     let save_user = await accounts.create({
@@ -178,7 +185,7 @@ async function save_account(address, type_id, balance, account_category, account
       balance: Number(balance),
       account_category: account_category,
       account_owner: account_owner,
-      active: true,
+      active,
     });
 
     if (save_user) {
@@ -389,6 +396,7 @@ async function activate_account(req, res) {
         main_helper.error_message("missing some fields"),
       );
     }
+
     address = address.toLowerCase();
 
     const account = await accounts.findOne({ account_owner: address });
@@ -411,6 +419,7 @@ async function activate_account(req, res) {
       loopCount++;
       const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
 
+      console.log(loopCount, result, address);
       if (result.staketime == 0) {
         condition = false;
         break;
@@ -441,9 +450,11 @@ async function activate_account(req, res) {
           "ether",
           "deposit",
         );
+        console.log("finished");
       }
     }
 
+    console.log("should run real finish");
     return main_helper.success_response(res, {
       message: "success",
       account: newestAccount,
