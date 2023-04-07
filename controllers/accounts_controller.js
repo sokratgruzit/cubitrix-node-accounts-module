@@ -429,6 +429,7 @@ async function activate_account(req, res) {
 
     const mutex = mutexes[address] || new Mutex();
     mutexes[address] = mutex;
+    await mutex.acquire();
 
     while (condition) {
       loopCount++;
