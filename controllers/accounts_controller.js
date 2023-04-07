@@ -422,11 +422,11 @@ async function activate_account(req, res) {
     let condition = true;
     let newestAccount = account;
     let loopCount = newestAccount.staked.length - 1;
+
     while (condition) {
       loopCount++;
       const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
 
-      console.log(loopCount, result, address);
       if (result.staketime == 0) {
         condition = false;
         break;
