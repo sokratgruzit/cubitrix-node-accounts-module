@@ -467,7 +467,8 @@ async function activate_account(req, res) {
         );
       }
     }
-    await mutex.acquire();
+    mutex.release();
+    delete mutexes[address];
 
     return main_helper.success_response(res, {
       message: "success",
