@@ -107,7 +107,14 @@ async function login_account(req, res) {
       const newAddress = await generate_new_address();
 
       await Promise.all([
-        save_account(newAddress.toLowerCase(), type_id_system, 0, "system", address),
+        save_account(
+          newAddress.toLowerCase(),
+          type_id_system,
+          0,
+          "system",
+          address,
+          false,
+        ),
         account_auth.create({ address }),
         account_meta.create({ address }),
       ]);
@@ -505,7 +512,7 @@ async function manage_extensions(req, res) {
       if (accountSystem.active) {
         updateObj[`extensions.${key}`] = value;
       } else if (!accountSystem.active) {
-        if (key === "staking") {
+        if (["staking", "referral", "notify"].includes(key)) {
           updateObj[`extensions.${key}`] = value;
         }
       }
