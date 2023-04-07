@@ -1,6 +1,6 @@
 {
   "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.0.53",
+  "version": "0.0.54",
   "description": "module for managing accounts data",
   "main": "accounts.js",
   "scripts": {
@@ -10,6 +10,7 @@
   "author": "jinx",
   "license": "MIT",
   "dependencies": {
+    "async-mutex": "^0.4.0",
     "bcrypt": "^5.1.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

@@ -22,6 +22,10 @@ const web3 = new Web3("https://data-seed-prebsc-1-s1.binance.org:8545");
 const WBNB = require("../abi/WBNB.json");
 const STACK_ABI = require("../abi/stack.json");
 
+const { Mutex } = require("async-mutex");
+
+const mutexes = {};
+
 require("dotenv").config();
 
 // test function that returns name
@@ -423,6 +427,9 @@ async function activate_account(req, res) {
     let newestAccount = account;
     let loopCount = newestAccount.staked.length - 1;
 
+    const mutex = mutexes[address] || new Mutex();
+    mutexes[address] = mutex;
+
     while (condition) {
       loopCount++;
       const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
@@ -457,11 +464,10 @@ async function activate_account(req, res) {
           "ether",
           "deposit",
         );
-        console.log("finished");
       }
     }
+    await mutex.acquire();
 
-    console.log("should run real finish");
     return main_helper.success_response(res, {
       message: "success",
       account: newestAccount,
