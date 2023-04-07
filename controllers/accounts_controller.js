@@ -427,6 +427,10 @@ async function activate_account(req, res) {
     let newestAccount = account;
     let loopCount = newestAccount.staked.length - 1;
 
+    if (mutexes[address]) {
+      return main_helper.error_response(res, "account is currently being updated");
+    }
+
     const mutex = mutexes[address] || new Mutex();
     mutexes[address] = mutex;
     await mutex.acquire();
@@ -434,6 +438,8 @@ async function activate_account(req, res) {
     while (condition) {
       loopCount++;
       const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
+
+      newestAccount = await accounts.findOne({ account_owner: address });
 
       if (result.staketime == 0) {
         condition = false;
