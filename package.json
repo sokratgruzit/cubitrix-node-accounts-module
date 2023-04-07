@@ -1,6 +1,6 @@
 {
   "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.0.52",
+  "version": "0.0.53",
   "description": "module for managing accounts data",
   "main": "accounts.js",
   "scripts": {
@@ -26,7 +26,7 @@
     "web3-eth-accounts": "^1.8.1"
   },
   "peerDependencies": {
-    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.19",
+    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.20",
     "@cubitrix/models": "^0.0.41"
   },
   "devDependencies": {
