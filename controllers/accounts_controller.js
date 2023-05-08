@@ -171,7 +171,13 @@ async function create_different_accounts(req, res) {
       });
     }
 
-    let account_saved = await save_account("", type_id, 0, type, address);
+    let account_saved = await save_account(
+      `${address}(${type})`,
+      type_id,
+      0,
+      type,
+      address
+    );
 
     if (!account_saved.success) {
       return main_helper.error_response(res, account_saved);
