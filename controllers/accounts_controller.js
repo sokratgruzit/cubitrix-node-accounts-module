@@ -153,11 +153,12 @@ async function create_different_accounts(req, res) {
     if (address == undefined) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields")
+        main_helper.error_message("missing some fields"),
       );
     }
 
     let type_id = await account_helper.get_type_id(type);
+    // let account_exists = await account_helper.check_account_exists(address, type_id);
 
     let account_exists = await accounts.findOne({
       account_owner: address,
@@ -170,73 +171,28 @@ async function create_different_accounts(req, res) {
         data: account_exists,
       });
     }
-
+    let account_web3 = new web3_accounts(
+      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
+    );
+    let create_account = account_web3.create();
+    let created_address = create_account.address;
+    await accounts_keys.create({
+      address: created_address,
+      object_value: create_account,
+    });
     let account_saved = await save_account(
-      `${address}(${type})`,
+      created_address.toLowerCase(),
       type_id,
       0,
       type,
-      address
+      address,
     );
-
-    if (!account_saved.success) {
-      return main_helper.error_response(res, account_saved);
-    }
 
     res.status(200).send({ message: "account opened", data: account_saved });
   } catch (e) {
     console.log(e.message);
   }
 }
-// async function create_different_accounts(req, res) {
-//   try {
-//     let { address, type } = req.body;
-
-//     address = address.toLowerCase();
-
-//     if (address == undefined) {
-//       return main_helper.error_response(
-//         res,
-//         main_helper.error_message("missing some fields"),
-//       );
-//     }
-
-//     let type_id = await account_helper.get_type_id(type);
-//     // let account_exists = await account_helper.check_account_exists(address, type_id);
-
-//     let account_exists = await accounts.findOne({
-//       account_owner: address,
-//       account_type_id: type_id,
-//     });
-
-//     if (account_exists) {
-//       return main_helper.success_response(res, {
-//         message: "user already exists",
-//         data: account_exists,
-//       });
-//     }
-//     let account_web3 = new web3_accounts(
-//       "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
-//     );
-//     let create_account = account_web3.create();
-//     let created_address = create_account.address;
-//     await accounts_keys.create({
-//       address: created_address,
-//       object_value: create_account,
-//     });
-//     let account_saved = await save_account(
-//       created_address.toLowerCase(),
-//       type_id,
-//       0,
-//       type,
-//       address,
-//     );
-
-//     res.status(200).send({ message: "account opened", data: account_saved });
-//   } catch (e) {
-//     console.log(e.message);
-//   }
-// }
 
 // saving account in db
 async function save_account(
