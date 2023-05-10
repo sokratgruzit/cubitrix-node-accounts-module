@@ -622,12 +622,10 @@ async function get_account_by_type(req, res) {
         main_helper.error_message("account not found")
       );
     }
-    res.status(200).json(
-      main_helper.return_data({
-        status: true,
-        data: account,
-      })
-    );
+    res.status(200).json({
+      success: true,
+      data: account,
+    });
   } catch (e) {
     console.log(e);
     return main_helper.error_response(res, "error getting account");
