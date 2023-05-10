@@ -3,10 +3,10 @@ const account_helper = require("../helpers/accounts");
 const {
   accounts,
   account_meta,
-  account_loan,
   accounts_keys,
   account_auth,
   verified_emails,
+  options,
 } = require("@cubitrix/models");
 
 const {
@@ -153,12 +153,28 @@ async function create_different_accounts(req, res) {
     if (address == undefined) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields"),
+        main_helper.error_message("missing some fields")
       );
     }
 
     let type_id = await account_helper.get_type_id(type);
     // let account_exists = await account_helper.check_account_exists(address, type_id);
+
+    let option = await options.findOne({ key: "extension_options" });
+
+    let fee;
+
+    if (type === "loan") fee = option.object_value.loan_extensions_fee;
+    if (type === "trade") fee = option.object_value.trade_extensions_fee;
+
+    fee = parseInt(fee);
+
+    if (isNaN(fee)) {
+      return main_helper.error_response(res, {
+        message: "fee must be a real number",
+        data: account_exists,
+      });
+    }
 
     let account_exists = await accounts.findOne({
       account_owner: address,
@@ -166,13 +182,13 @@ async function create_different_accounts(req, res) {
     });
 
     if (account_exists) {
-      return main_helper.success_response(res, {
+      return main_helper.error_response(res, {
         message: "user already exists",
         data: account_exists,
       });
     }
     let account_web3 = new web3_accounts(
-      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
+      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"
     );
     let create_account = account_web3.create();
     let created_address = create_account.address;
@@ -185,8 +201,15 @@ async function create_different_accounts(req, res) {
       type_id,
       0,
       type,
-      address,
+      address
     );
+
+    if (account_saved) {
+      await accounts.findOneAndUpdate(
+        { account_owner: address, account_category: "system" },
+        { $inc: { balance: -fee } }
+      );
+    }
 
     res.status(200).send({ message: "account opened", data: account_saved });
   } catch (e) {
@@ -571,11 +594,52 @@ async function manage_extensions(req, res) {
   }
 }
 
+async function get_account_by_type(req, res) {
+  try {
+    let { address, type } = req.body;
+
+    if (!address && req.auth?.address) {
+      address = req.auth.address;
+    }
+
+    address = address.toLowerCase();
+
+    if (!address || !type) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("address and type is required")
+      );
+    }
+
+    let account = await accounts.find({
+      account_owner: address,
+      account_category: type,
+    });
+
+    if (!account) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("account not found")
+      );
+    }
+    res.status(200).json(
+      main_helper.return_data({
+        status: true,
+        data: account,
+      })
+    );
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_response(res, "error getting account");
+  }
+}
+
 module.exports = {
   index,
   login_account,
   login_with_email,
   get_account,
+  get_account_by_type,
   update_auth_account_password,
   create_different_accounts,
   activate_account_via_staking,
