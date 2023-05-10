@@ -611,7 +611,7 @@ async function get_account_by_type(req, res) {
       );
     }
 
-    let account = await accounts.find({
+    let account = await accounts.findOne({
       account_owner: address,
       account_category: type,
     });
