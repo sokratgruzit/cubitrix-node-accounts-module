@@ -28,7 +28,7 @@
   "peerDependencies": {
     "async-mutex": ">=0.4.0",
     "@cubitrix/cubitrix-node-transactions-module": ">=0.0.20",
-    "@cubitrix/models": "^0.0.41"
+    "@cubitrix/models": "^0.0.49"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"
