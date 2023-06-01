@@ -501,7 +501,7 @@ async function manage_extensions(req, res) {
 
     const [account, accountSystem, accountMeta] = await Promise.all([
       accounts.findOne({ address: address }),
-      accounts.findOne({ account_owner: address }),
+      accounts.findOne({ account_owner: address, account_category: "system" }),
       account_meta.findOne({ address: address }),
     ]);
 
