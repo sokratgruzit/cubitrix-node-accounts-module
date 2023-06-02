@@ -637,14 +637,6 @@ async function get_account_by_type(req, res) {
 async function get_account_balances(req, res) {
   try {
     let { address } = req.body;
-    let assetsArray = {
-      cpl: 0,
-      btc: 0,
-      eth: 0,
-      usdt: 0,
-      gold: 0,
-      platinium: 0,
-    };
 
     if (!address && req.auth?.address) {
       address = req.auth.address;
@@ -655,10 +647,9 @@ async function get_account_balances(req, res) {
       {
         $or: [{ account_owner: address }, { address: address }],
       },
-      { _id: 0, address: 1, account_category: 1, extensions: 1 }
+      { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 }
     );
-    console.log(accounts_data);
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       data: accounts_data,
     });
