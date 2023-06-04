@@ -90,7 +90,6 @@ async function update_meta(req, res) {
         nationality,
         avatar,
       );
-      console.log(account_saved);
 
       if (account_saved.success) {
         if (email) {

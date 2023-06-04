@@ -22,6 +22,8 @@ const web3 = new Web3("https://data-seed-prebsc-1-s1.binance.org:8545");
 const WBNB = require("../abi/WBNB.json");
 const STACK_ABI = require("../abi/stack.json");
 
+const ObjectId = require("mongodb").ObjectId;
+
 const { Mutex } = require("async-mutex");
 
 const mutexes = {};
@@ -38,10 +40,7 @@ async function login_with_email(req, res) {
   let { email, password } = req.body;
   const account = await account_meta.findOne({ email });
   if (!account) {
-    return main_helper.error_response(
-      res,
-      "Token is invalid or user doesn't exist"
-    );
+    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
   const found = await account_auth.findOne({ address: account.address });
@@ -50,8 +49,7 @@ async function login_with_email(req, res) {
   }
   if (found.password) {
     const pass_match = await found.match_password(password);
-    if (!pass_match)
-      return main_helper.error_response(res, "incorrect password");
+    if (!pass_match) return main_helper.error_response(res, "incorrect password");
 
     if (found.otp_enabled)
       return main_helper.success_response(res, {
@@ -59,13 +57,9 @@ async function login_with_email(req, res) {
         address: account.address,
       });
 
-    const token = jwt.sign(
-      { address: account.address, email: email },
-      "jwt_secret",
-      {
-        expiresIn: "24h",
-      }
-    );
+    const token = jwt.sign({ address: account.address, email: email }, "jwt_secret", {
+      expiresIn: "24h",
+    });
     res.cookie("Access-Token", token, {
       sameSite: "none",
       httpOnly: true,
@@ -88,7 +82,7 @@ async function login_account(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields")
+        main_helper.error_message("Fill all fields"),
       );
     }
     address = address.toLowerCase();
@@ -101,10 +95,7 @@ async function login_account(req, res) {
     let type_id = typeResults[0];
     let type_id_system = typeResults[1];
 
-    let account_exists = await account_helper.check_account_exists(
-      address,
-      type_id
-    );
+    let account_exists = await account_helper.check_account_exists(address, type_id);
 
     if (account_exists.success) {
       return main_helper.success_response(res, account_exists);
@@ -115,7 +106,7 @@ async function login_account(req, res) {
       type_id,
       0,
       "external",
-      ""
+      "",
     );
 
     if (accountSaved.success) {
@@ -128,7 +119,7 @@ async function login_account(req, res) {
           0,
           "system",
           address,
-          false
+          false,
         ),
         account_auth.create({ address }),
         account_meta.create({ address }),
@@ -137,10 +128,7 @@ async function login_account(req, res) {
 
     return main_helper.success_response(res, "success");
   } catch (e) {
-    return main_helper.error_response(
-      res,
-      main_helper.error_message(e?.message)
-    );
+    return main_helper.error_response(res, main_helper.error_message(e?.message));
   }
 }
 // create different accounts like loan,
@@ -153,7 +141,7 @@ async function create_different_accounts(req, res) {
     if (address == undefined) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields")
+        main_helper.error_message("missing some fields"),
       );
     }
 
@@ -188,7 +176,7 @@ async function create_different_accounts(req, res) {
       });
     }
     let account_web3 = new web3_accounts(
-      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"
+      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
     );
     let create_account = account_web3.create();
     let created_address = create_account.address;
@@ -201,13 +189,13 @@ async function create_different_accounts(req, res) {
       type_id,
       0,
       type,
-      address
+      address,
     );
 
     if (account_saved) {
       await accounts.findOneAndUpdate(
         { account_owner: address, account_category: "system" },
-        { $inc: { balance: -fee } }
+        { $inc: { balance: -fee } },
       );
     }
 
@@ -224,7 +212,7 @@ async function save_account(
   balance,
   account_category,
   account_owner,
-  active = true
+  active = true,
 ) {
   address = address.toLowerCase();
   try {
@@ -295,7 +283,7 @@ async function save_account(
 
 async function generate_new_address() {
   let account_web3 = new web3_accounts(
-    "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"
+    "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
   );
   let create_account = account_web3.create();
   let created_address = create_account.address;
@@ -331,8 +319,7 @@ async function update_auth_account_password(req, res) {
         }
         if (user.password) {
           const pass_match = await user.match_password(currentPassword);
-          if (!pass_match)
-            return main_helper.error_response(res, "incorrect password");
+          if (!pass_match) return main_helper.error_response(res, "incorrect password");
         }
         await user.updateOne({ password: newPassword });
         return main_helper.success_response(res, "password updated");
@@ -356,11 +343,11 @@ async function get_account(req, res) {
     address = address.toLowerCase();
 
     let results = await accounts.aggregate([
-      { $match: { address: address } },
+      { $match: { account_owner: address, account_category: "system" } },
       {
         $lookup: {
           from: "account_metas",
-          localField: "address",
+          localField: "account_owner",
           foreignField: "address",
           as: "meta",
         },
@@ -368,9 +355,25 @@ async function get_account(req, res) {
       {
         $lookup: {
           from: "accounts",
-          localField: "address",
+          localField: "account_owner",
           foreignField: "account_owner",
           as: "system",
+        },
+      },
+      {
+        $unwind: "$meta",
+      },
+      {
+        $addFields: {
+          meta_id_objectId: { $toObjectId: "$meta._id" },
+        },
+      },
+      {
+        $lookup: {
+          from: "referral_uni_users",
+          localField: "meta_id_objectId",
+          foreignField: "user_id",
+          as: "referral",
         },
       },
     ]);
@@ -386,7 +389,7 @@ async function get_account(req, res) {
       main_helper.return_data({
         status: true,
         data: { accounts: results },
-      })
+      }),
     );
   } catch (e) {
     console.log(e);
@@ -401,7 +404,7 @@ async function activate_account_via_staking(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields")
+        main_helper.error_message("missing some fields"),
       );
     }
 
@@ -412,20 +415,20 @@ async function activate_account_via_staking(req, res) {
     if (!account) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found")
+        main_helper.error_message("account not found"),
       );
     }
 
     const updatedSystemAccount = await accounts.findOneAndUpdate(
-      { account_owner: address },
+      { account_owner: address, account_category: "system" },
       { active: true },
-      { new: true }
+      { new: true },
     );
 
     if (!updatedSystemAccount) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found")
+        main_helper.error_message("account not found"),
       );
     }
 
@@ -443,18 +446,21 @@ async function activate_account(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields")
+        main_helper.error_message("missing some fields"),
       );
     }
 
     address = address.toLowerCase();
 
-    const account = await accounts.findOne({ account_owner: address });
+    const account = await accounts.findOne({
+      account_owner: address,
+      account_category: "system",
+    });
 
     if (!account) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found")
+        main_helper.error_message("account not found"),
       );
     }
 
@@ -467,10 +473,7 @@ async function activate_account(req, res) {
     let loopCount = newestAccount.staked.length - 1;
 
     if (mutexes[address]) {
-      return main_helper.error_response(
-        res,
-        "account is currently being updated"
-      );
+      return main_helper.error_response(res, "account is currently being updated");
     }
 
     const mutex = mutexes[address] || new Mutex();
@@ -479,11 +482,12 @@ async function activate_account(req, res) {
 
     while (condition) {
       loopCount++;
-      const result = await tokenContract.methods
-        .stakersRecord(address, loopCount)
-        .call();
+      const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
 
-      newestAccount = await accounts.findOne({ account_owner: address });
+      newestAccount = await accounts.findOne({
+        account_owner: address,
+        account_category: "system",
+      });
 
       if (result.staketime == 0) {
         condition = false;
@@ -492,12 +496,10 @@ async function activate_account(req, res) {
 
       if (
         newestAccount.staked.length === 0 ||
-        !newestAccount.staked.some(
-          (item) => item.staketime === result.staketime
-        )
+        !newestAccount.staked.some((item) => item.staketime === result.staketime)
       ) {
         newestAccount = await accounts.findOneAndUpdate(
-          { account_owner: address },
+          { account_owner: address, account_category: "system" },
           {
             active: true,
             $inc: { balance: result.amount / 10 ** 18 },
@@ -509,13 +511,13 @@ async function activate_account(req, res) {
               },
             },
           },
-          { new: true }
+          { new: true },
         );
         await create_deposit_transaction(
           address,
           result.amount / 10 ** 18,
           "ether",
-          "deposit"
+          "deposit",
         );
       }
     }
@@ -539,7 +541,7 @@ async function manage_extensions(req, res) {
     if (!address || !extensions) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields")
+        main_helper.error_message("missing some fields"),
       );
     }
 
@@ -554,7 +556,7 @@ async function manage_extensions(req, res) {
     if (!account) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found")
+        main_helper.error_message("account not found"),
       );
     }
 
@@ -562,7 +564,7 @@ async function manage_extensions(req, res) {
       //unverified so cant turn on
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not verified")
+        main_helper.error_message("account not verified"),
       );
     }
 
@@ -581,7 +583,7 @@ async function manage_extensions(req, res) {
     const updatedAccount = await accounts.findOneAndUpdate(
       { address: address },
       { $set: updateObj },
-      { new: true }
+      { new: true },
     );
 
     return main_helper.success_response(res, {
@@ -607,7 +609,7 @@ async function get_account_by_type(req, res) {
     if (!address || !type) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("address and type is required")
+        main_helper.error_message("address and type is required"),
       );
     }
 
@@ -619,7 +621,7 @@ async function get_account_by_type(req, res) {
     if (!account) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found")
+        main_helper.error_message("account not found"),
       );
     }
     res.status(200).json({
