@@ -3,6 +3,7 @@ const account_helper = require("../helpers/accounts");
 const {
   accounts,
   account_meta,
+  account_balances,
   accounts_keys,
   account_auth,
   verified_emails,
@@ -131,6 +132,7 @@ async function login_account(req, res) {
     return main_helper.error_response(res, main_helper.error_message(e?.message));
   }
 }
+
 // create different accounts like loan,
 async function create_different_accounts(req, res) {
   try {
@@ -634,6 +636,42 @@ async function get_account_by_type(req, res) {
   }
 }
 
+async function get_account_balances(req, res) {
+  try {
+    let { address } = req.body;
+
+    if (!address && req.auth?.address) {
+      address = req.auth.address;
+    }
+
+    address = address.toLowerCase();
+    let accounts_data = await accounts.find(
+      {
+        $or: [{ account_owner: address }, { address: address }],
+      },
+      { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 }
+    );
+    return res.status(200).json({
+      success: true,
+      data: accounts_data,
+    });
+
+    // if (!account) {
+    //   return main_helper.error_response(
+    //     res,
+    //     main_helper.error_message("account not found")
+    //   );
+    // }
+    // res.status(200).json({
+    //   success: true,
+    //   data: account,
+    // });
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_response(res, "error getting account");
+  }
+}
+
 module.exports = {
   index,
   login_account,
@@ -645,5 +683,6 @@ module.exports = {
   activate_account_via_staking,
   activate_account,
   manage_extensions,
+  get_account_balances,
   // open_utility_accounts,
 };
