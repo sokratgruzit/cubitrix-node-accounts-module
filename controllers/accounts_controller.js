@@ -549,13 +549,12 @@ async function manage_extensions(req, res) {
 
     address = address.toLowerCase();
 
-    const [account, accountSystem, accountMeta] = await Promise.all([
-      accounts.findOne({ address: address }),
+    const [accountSystem, accountMeta] = await Promise.all([
       accounts.findOne({ account_owner: address, account_category: "system" }),
       account_meta.findOne({ address: address }),
     ]);
 
-    if (!account) {
+    if (!accountSystem) {
       return main_helper.error_response(
         res,
         main_helper.error_message("account not found"),
@@ -563,7 +562,6 @@ async function manage_extensions(req, res) {
     }
 
     if (!accountMeta.email) {
-      //unverified so cant turn on
       return main_helper.error_response(
         res,
         main_helper.error_message("account not verified"),
@@ -583,7 +581,7 @@ async function manage_extensions(req, res) {
     }
 
     const updatedAccount = await accounts.findOneAndUpdate(
-      { address: address },
+      { account_owner: address, account_category: "system" },
       { $set: updateObj },
       { new: true },
     );
@@ -649,7 +647,7 @@ async function get_account_balances(req, res) {
       {
         $or: [{ account_owner: address }, { address: address }],
       },
-      { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 }
+      { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 },
     );
     return res.status(200).json({
       success: true,
