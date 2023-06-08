@@ -137,7 +137,7 @@ async function login_account(req, res) {
 
 async function handle_step() {
   try {
-    const { address } = req.body;
+    const { address, step, registered } = req.body;
 
     if (!address) {
       return main_helper.error_response(
@@ -161,7 +161,7 @@ async function handle_step() {
 
     const updatedSystemAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "system" },
-      { step: systemAccount.step + 1 },
+      { step, registered },
       { new: true },
     );
 
