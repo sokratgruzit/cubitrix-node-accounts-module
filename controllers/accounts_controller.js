@@ -135,9 +135,9 @@ async function login_account(req, res) {
   }
 }
 
-async function handle_step() {
+async function handle_step(req, res) {
   try {
-    const { address, step, registered } = req.body;
+    let { address, step, registered } = req.body;
 
     if (!address) {
       return main_helper.error_response(
@@ -170,6 +170,7 @@ async function handle_step() {
       account: updatedSystemAccount,
     });
   } catch (e) {
+    console.log(e);
     return main_helper.error_response(res, "something went wrong");
   }
 }
