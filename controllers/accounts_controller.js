@@ -121,6 +121,8 @@ async function login_account(req, res) {
           "system",
           address,
           false,
+          false,
+          2,
         ),
         account_auth.create({ address }),
         account_meta.create({ address }),
@@ -130,6 +132,45 @@ async function login_account(req, res) {
     return main_helper.success_response(res, "success");
   } catch (e) {
     return main_helper.error_response(res, main_helper.error_message(e?.message));
+  }
+}
+
+async function handle_step() {
+  try {
+    const { address } = req.body;
+
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("Fill all fields"),
+      );
+    }
+    address = address.toLowerCase();
+
+    const systemAccount = await accounts.findOne({
+      account_owner: address,
+      account_category: "system",
+    });
+
+    if (!systemAccount) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("account not found"),
+      );
+    }
+
+    const updatedSystemAccount = await accounts.findOneAndUpdate(
+      { account_owner: address, account_category: "system" },
+      { step: systemAccount.step + 1 },
+      { new: true },
+    );
+
+    return main_helper.success_response(res, {
+      message: "success",
+      account: updatedSystemAccount,
+    });
+  } catch (e) {
+    return main_helper.error_response(res, "something went wrong");
   }
 }
 
@@ -215,6 +256,8 @@ async function save_account(
   account_category,
   account_owner,
   active = true,
+  registered,
+  step,
 ) {
   address = address.toLowerCase();
   try {
@@ -225,6 +268,8 @@ async function save_account(
       account_category: account_category,
       account_owner: account_owner,
       active,
+      registered,
+      step,
     });
 
     if (save_user) {
@@ -352,14 +397,6 @@ async function get_account(req, res) {
           localField: "account_owner",
           foreignField: "address",
           as: "meta",
-        },
-      },
-      {
-        $lookup: {
-          from: "accounts",
-          localField: "account_owner",
-          foreignField: "account_owner",
-          as: "system",
         },
       },
       {
@@ -682,5 +719,6 @@ module.exports = {
   activate_account,
   manage_extensions,
   get_account_balances,
+  handle_step,
   // open_utility_accounts,
 };
