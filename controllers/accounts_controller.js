@@ -385,8 +385,6 @@ async function get_account(req, res) {
       results[0].hasPasswordSet = auth_acc?.password ? true : false;
       results[0].otp_enabled = auth_acc?.otp_enabled;
       results[0].otp_verified = auth_acc?.otp_verified;
-      results[0].meta.email = "emailverified@gmail.com";
-      results[0].active = true;
     }
 
     res.status(200).json(

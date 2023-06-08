@@ -4,6 +4,113 @@ const account_helper = require("../helpers/accounts");
 require("dotenv").config();
 
 // logic of checking profile info
+// async function update_meta(req, res) {
+//   try {
+//     let { address, name, email, mobile, date_of_birth, nationality, avatar } = req.body;
+
+//     if (!address && req.auth) {
+//       address = req.auth.address;
+//     }
+
+//     if (address == undefined) {
+//       return main_helper.error_response(
+//         res,
+//         main_helper.error_message("Fill all fields"),
+//       );
+//     }
+
+//     address = address.toLowerCase();
+
+//     let account_meta_exists = await account_meta.findOne({
+//       address,
+//     });
+//     if (account_meta_exists) {
+//       if (account_meta_exists.email && account_meta_exists?.email === email) {
+//         await account_meta_exists.updateOne({
+//           address,
+//           name,
+//           email,
+//           mobile,
+//           date_of_birth,
+//           nationality,
+//           avatar,
+//         });
+//         return main_helper.success_response(res, "account updated");
+//       } else {
+//         if (account_meta_exists.email && account_meta_exists?.email !== email) {
+//           await verified_emails.deleteMany({ address });
+//           await account_meta_exists.updateOne({
+//             address,
+//             name,
+//             mobile,
+//             email: "",
+//             date_of_birth,
+//             nationality,
+//             avatar,
+//           });
+//           const response = await account_helper.check_and_send_verification_email(
+//             address,
+//             email,
+//           );
+//           if (response.success) {
+//             return main_helper.success_response(res, response.message);
+//           }
+//           return main_helper.error_response(res, response.message);
+//         } else {
+//           const updated = await account_meta_exists.updateOne({
+//             address,
+//             name,
+//             mobile,
+//             date_of_birth,
+//             nationality,
+//             avatar,
+//           });
+//           if (email) {
+//             const response = await account_helper.check_and_send_verification_email(
+//               address,
+//               email,
+//             );
+//             if (response.success) {
+//               return main_helper.success_response(res, response.message);
+//             }
+//             return main_helper.error_response(res, response.message);
+//           }
+//           if (updated.acknowledged) {
+//             return main_helper.success_response(res, "success");
+//           }
+//           return main_helper.error_response(res, "could not update");
+//         }
+//       }
+//     } else {
+//       let account_saved = await save_account_meta(
+//         address,
+//         name,
+//         mobile,
+//         new Date(date_of_birth),
+//         nationality,
+//         avatar,
+//       );
+
+//       if (account_saved.success) {
+//         if (email) {
+//           const response = await account_helper.check_and_send_verification_email(
+//             address,
+//             email,
+//           );
+//           if (response.success) {
+//             return main_helper.success_response(res, response?.message);
+//           }
+//           return main_helper.error_response(res, response?.message);
+//         }
+//         return main_helper.success_response(res, "updated");
+//       }
+//       return main_helper.error_response(res, account_saved.message);
+//     }
+//   } catch (e) {
+//     return main_helper.error_response(res, main_helper.error_message(e.message));
+//   }
+// }
+
 async function update_meta(req, res) {
   try {
     let { address, name, email, mobile, date_of_birth, nationality, avatar } = req.body;
@@ -25,62 +132,21 @@ async function update_meta(req, res) {
       address,
     });
     if (account_meta_exists) {
-      if (account_meta_exists.email && account_meta_exists?.email === email) {
-        await account_meta_exists.updateOne({
-          address,
-          name,
-          email,
-          mobile,
-          date_of_birth,
-          nationality,
-          avatar,
-        });
+      // Regardless of previous email status, update the account.
+      const updated = await account_meta_exists.updateOne({
+        address,
+        name,
+        email, // Directly update email without verification.
+        mobile,
+        date_of_birth,
+        nationality,
+        avatar,
+      });
+
+      if (updated.acknowledged) {
         return main_helper.success_response(res, "account updated");
-      } else {
-        if (account_meta_exists.email && account_meta_exists?.email !== email) {
-          await verified_emails.deleteMany({ address });
-          await account_meta_exists.updateOne({
-            address,
-            name,
-            mobile,
-            email: "",
-            date_of_birth,
-            nationality,
-            avatar,
-          });
-          const response = await account_helper.check_and_send_verification_email(
-            address,
-            email,
-          );
-          if (response.success) {
-            return main_helper.success_response(res, response.message);
-          }
-          return main_helper.error_response(res, response.message);
-        } else {
-          const updated = await account_meta_exists.updateOne({
-            address,
-            name,
-            mobile,
-            date_of_birth,
-            nationality,
-            avatar,
-          });
-          if (email) {
-            const response = await account_helper.check_and_send_verification_email(
-              address,
-              email,
-            );
-            if (response.success) {
-              return main_helper.success_response(res, response.message);
-            }
-            return main_helper.error_response(res, response.message);
-          }
-          if (updated.acknowledged) {
-            return main_helper.success_response(res, "success");
-          }
-          return main_helper.error_response(res, "could not update");
-        }
       }
+      return main_helper.error_response(res, "could not update");
     } else {
       let account_saved = await save_account_meta(
         address,
@@ -89,19 +155,10 @@ async function update_meta(req, res) {
         new Date(date_of_birth),
         nationality,
         avatar,
+        email, // Include email for a new account.
       );
 
       if (account_saved.success) {
-        if (email) {
-          const response = await account_helper.check_and_send_verification_email(
-            address,
-            email,
-          );
-          if (response.success) {
-            return main_helper.success_response(res, response?.message);
-          }
-          return main_helper.error_response(res, response?.message);
-        }
         return main_helper.success_response(res, "updated");
       }
       return main_helper.error_response(res, account_saved.message);
@@ -110,6 +167,7 @@ async function update_meta(req, res) {
     return main_helper.error_response(res, main_helper.error_message(e.message));
   }
 }
+
 // verification code
 async function verify(req, res) {
   try {
