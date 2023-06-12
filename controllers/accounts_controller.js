@@ -557,7 +557,7 @@ async function activate_account(req, res) {
           address,
           result.amount / 10 ** 18,
           "ether",
-          "deposit",
+          "payment",
         );
       }
     }
