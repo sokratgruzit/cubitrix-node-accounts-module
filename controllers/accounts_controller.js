@@ -8,6 +8,7 @@ const {
   account_auth,
   verified_emails,
   options,
+  stakes,
 } = require("@cubitrix/models");
 
 const {
@@ -504,13 +505,15 @@ async function activate_account(req, res) {
       );
     }
 
+    const userStakes = await stakes.find({ address: address });
+
     const tokenAddress = "0xd472C9aFa90046d42c00586265A3F62745c927c0"; // Staking contract Address
 
     const tokenContract = new web3.eth.Contract(STACK_ABI, tokenAddress);
 
     let condition = true;
-    let newestAccount = account;
-    let loopCount = newestAccount.staked.length - 1;
+    let newestStakes = userStakes;
+    let loopCount = userStakes.length - 1;
 
     if (mutexes[address]) {
       return main_helper.error_response(res, "account is currently being updated");
@@ -523,36 +526,23 @@ async function activate_account(req, res) {
     while (condition) {
       loopCount++;
       const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
-
-      newestAccount = await accounts.findOne({
-        account_owner: address,
-        account_category: "system",
-      });
-
       if (result.staketime == 0) {
         condition = false;
         break;
       }
 
       if (
-        newestAccount.staked.length === 0 ||
-        !newestAccount.staked.some((item) => item.staketime === result.staketime)
+        newestStakes.length === 0 ||
+        !newestStakes.some((item) => item.staketime === result.staketime)
       ) {
-        newestAccount = await accounts.findOneAndUpdate(
-          { account_owner: address, account_category: "system" },
-          {
-            active: true,
-            $inc: { balance: result.amount / 10 ** 18 },
-            $push: {
-              staked: {
-                staketime: result.staketime,
-                amount: result.amount / 10 ** 18,
-                added: true,
-              },
-            },
-          },
-          { new: true },
-        );
+        const createdStake = await stakes.create({
+          amount: result.amount / 10 ** 18,
+          reward: result.reward / 10 ** 18,
+          address: address,
+          staketime: result.staketime,
+          unstaketime: result.unstaketime,
+        });
+        newestStakes = [...newestStakes, createdStake];
         await create_deposit_transaction(
           address,
           result.amount / 10 ** 18,
@@ -561,12 +551,18 @@ async function activate_account(req, res) {
         );
       }
     }
+
     mutex.release();
     delete mutexes[address];
 
+    const newestAcc = await accounts.findOne({
+      account_owner: address,
+      account_category: "system",
+    });
+
     return main_helper.success_response(res, {
       message: "success",
-      account: newestAccount,
+      account: newestAcc,
     });
   } catch (e) {
     console.log(e);
