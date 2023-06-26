@@ -89,42 +89,43 @@ async function login_account(req, res) {
     }
     address = address.toLowerCase();
 
-    const typeResults = await Promise.all([
-      account_helper.get_type_id("external"),
-      account_helper.get_type_id("system"),
-    ]);
+    let account_exists = await accounts.findOne({
+      address: address,
+      account_category: "external",
+    });
 
-    let type_id = typeResults[0];
-    let type_id_system = typeResults[1];
+    console.log(account_exists, "account_exists");
 
-    let account_exists = await account_helper.check_account_exists(address, type_id);
-
-    if (account_exists.success) {
-      return main_helper.success_response(res, account_exists);
+    if (account_exists) {
+      return main_helper.success_response(res, "account already exists");
     }
 
-    const accountSaved = await save_account(
-      address.toLowerCase(),
-      type_id,
-      0,
-      "external",
-      "",
-    );
+    let createdAcc = await accounts.create({
+      address: address.toLowerCase(),
+      account_category: "external",
+      account_owner: "",
+      active: true,
+    });
 
-    if (accountSaved.success) {
-      const newAddress = await generate_new_address();
+    if (createdAcc) {
+      const newAddressMain = await generate_new_address();
+      const newAddressSystem = await generate_new_address();
 
       await Promise.all([
-        save_account(
-          newAddress.toLowerCase(),
-          type_id_system,
-          0,
-          "system",
-          address,
-          false,
-          false,
-          2,
-        ),
+        await accounts.create({
+          address: newAddressMain.toLowerCase(),
+          balance: 0,
+          account_category: "main",
+          account_owner: address,
+          active: false,
+          registered: false,
+          step: 2,
+        }),
+        await accounts.create({
+          address: newAddressSystem.toLowerCase(),
+          account_category: "system",
+          account_owner: address,
+        }),
         account_auth.create({ address }),
         account_meta.create({ address }),
       ]);
@@ -150,7 +151,7 @@ async function handle_step(req, res) {
 
     const systemAccount = await accounts.findOne({
       account_owner: address,
-      account_category: "system",
+      account_category: "main",
     });
 
     if (!systemAccount) {
@@ -161,7 +162,7 @@ async function handle_step(req, res) {
     }
 
     const updatedSystemAccount = await accounts.findOneAndUpdate(
-      { account_owner: address, account_category: "system" },
+      { account_owner: address, account_category: "main" },
       { step, registered },
       { new: true },
     );
@@ -190,9 +191,6 @@ async function create_different_accounts(req, res) {
       );
     }
 
-    let type_id = await account_helper.get_type_id(type);
-    // let account_exists = await account_helper.check_account_exists(address, type_id);
-
     let option = await options.findOne({ key: "extension_options" });
 
     let fee;
@@ -211,7 +209,7 @@ async function create_different_accounts(req, res) {
 
     let account_exists = await accounts.findOne({
       account_owner: address,
-      account_type_id: type_id,
+      account_category: type,
     });
 
     if (account_exists) {
@@ -229,17 +227,18 @@ async function create_different_accounts(req, res) {
       address: created_address,
       object_value: create_account,
     });
-    let account_saved = await save_account(
-      created_address.toLowerCase(),
-      type_id,
-      0,
-      type,
-      address,
-    );
+
+    let account_saved = await accounts.create({
+      address: created_address.toLowerCase(),
+      balance: 0,
+      account_category: type,
+      account_owner: address,
+      active: true,
+    });
 
     if (account_saved) {
       await accounts.findOneAndUpdate(
-        { account_owner: address, account_category: "system" },
+        { account_owner: address, account_category: "main" },
         { $inc: { balance: -fee } },
       );
     }
@@ -247,40 +246,6 @@ async function create_different_accounts(req, res) {
     res.status(200).send({ message: "account opened", data: account_saved });
   } catch (e) {
     console.log(e.message);
-  }
-}
-
-// saving account in db
-async function save_account(
-  address,
-  type_id,
-  balance,
-  account_category,
-  account_owner,
-  active = true,
-  registered,
-  step,
-) {
-  address = address.toLowerCase();
-  try {
-    let save_user = await accounts.create({
-      address: address,
-      account_type_id: type_id,
-      balance: Number(balance),
-      account_category: account_category,
-      account_owner: account_owner,
-      active,
-      registered,
-      step,
-    });
-
-    if (save_user) {
-      return main_helper.success_message("User saved");
-    }
-
-    return main_helper.error_message("Error while saving user");
-  } catch (e) {
-    return main_helper.error_message(e.message);
   }
 }
 
@@ -336,6 +301,8 @@ async function generate_new_address() {
   );
   let create_account = account_web3.create();
   let created_address = create_account.address;
+
+  if (created_address) created_address = created_address.toLowerCase();
   await accounts_keys.create({
     address: created_address,
     object_value: create_account,
@@ -392,7 +359,7 @@ async function get_account(req, res) {
     address = address.toLowerCase();
 
     let results = await accounts.aggregate([
-      { $match: { account_owner: address, account_category: "system" } },
+      { $match: { account_owner: address, account_category: "main" } },
       {
         $lookup: {
           from: "account_metas",
@@ -461,7 +428,7 @@ async function activate_account_via_staking(req, res) {
     }
 
     const updatedSystemAccount = await accounts.findOneAndUpdate(
-      { account_owner: address, account_category: "system" },
+      { account_owner: address, account_category: "main" },
       { active: true },
       { new: true },
     );
@@ -495,7 +462,7 @@ async function activate_account(req, res) {
 
     const account = await accounts.findOne({
       account_owner: address,
-      account_category: "system",
+      account_category: "main",
     });
 
     if (!account) {
@@ -557,7 +524,7 @@ async function activate_account(req, res) {
 
     const newestAcc = await accounts.findOne({
       account_owner: address,
-      account_category: "system",
+      account_category: "main",
     });
 
     return main_helper.success_response(res, {
@@ -584,7 +551,7 @@ async function manage_extensions(req, res) {
     address = address.toLowerCase();
 
     const [accountSystem, accountMeta] = await Promise.all([
-      accounts.findOne({ account_owner: address, account_category: "system" }),
+      accounts.findOne({ account_owner: address, account_category: "main" }),
       account_meta.findOne({ address: address }),
     ]);
 
@@ -615,7 +582,7 @@ async function manage_extensions(req, res) {
     }
 
     const updatedAccount = await accounts.findOneAndUpdate(
-      { account_owner: address, account_category: "system" },
+      { account_owner: address, account_category: "main" },
       { $set: updateObj },
       { new: true },
     );
