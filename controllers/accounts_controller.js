@@ -470,7 +470,7 @@ async function activate_account(req, res) {
       );
     }
 
-    const userStakes = await stakes.find({ address: address });
+    const userStakes = await stakes.findOne({ address: address });
 
     const tokenAddress = "0xd472C9aFa90046d42c00586265A3F62745c927c0"; // Staking contract Address
 
