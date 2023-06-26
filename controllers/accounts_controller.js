@@ -94,8 +94,6 @@ async function login_account(req, res) {
       account_category: "external",
     });
 
-    console.log(account_exists, "account_exists");
-
     if (account_exists) {
       return main_helper.success_response(res, "account already exists");
     }
