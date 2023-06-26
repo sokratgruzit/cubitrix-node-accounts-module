@@ -149,19 +149,19 @@ async function handle_step(req, res) {
     }
     address = address.toLowerCase();
 
-    const systemAccount = await accounts.findOne({
+    const mainAccount = await accounts.findOne({
       account_owner: address,
       account_category: "main",
     });
 
-    if (!systemAccount) {
+    if (!mainAccount) {
       return main_helper.error_response(
         res,
         main_helper.error_message("account not found"),
       );
     }
 
-    const updatedSystemAccount = await accounts.findOneAndUpdate(
+    const updatedMainAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
       { step, registered },
       { new: true },
@@ -169,7 +169,7 @@ async function handle_step(req, res) {
 
     return main_helper.success_response(res, {
       message: "success",
-      account: updatedSystemAccount,
+      account: updatedMainAccount,
     });
   } catch (e) {
     console.log(e);
@@ -427,13 +427,13 @@ async function activate_account_via_staking(req, res) {
       );
     }
 
-    const updatedSystemAccount = await accounts.findOneAndUpdate(
+    const updatedMainAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
       { active: true },
       { new: true },
     );
 
-    if (!updatedSystemAccount) {
+    if (!updatedMainAccount) {
       return main_helper.error_response(
         res,
         main_helper.error_message("account not found"),
@@ -550,12 +550,12 @@ async function manage_extensions(req, res) {
 
     address = address.toLowerCase();
 
-    const [accountSystem, accountMeta] = await Promise.all([
+    const [accountMain, accountMeta] = await Promise.all([
       accounts.findOne({ account_owner: address, account_category: "main" }),
       account_meta.findOne({ address: address }),
     ]);
 
-    if (!accountSystem) {
+    if (!accountMain) {
       return main_helper.error_response(
         res,
         main_helper.error_message("account not found"),
@@ -572,9 +572,9 @@ async function manage_extensions(req, res) {
     const updateObj = {};
 
     for (const [key, value] of Object.entries(extensions)) {
-      if (accountSystem.active) {
+      if (accountMain.active) {
         updateObj[`extensions.${key}`] = value;
-      } else if (!accountSystem.active) {
+      } else if (!accountMain.active) {
         if (["staking", "referral", "notify"].includes(key)) {
           updateObj[`extensions.${key}`] = value;
         }
