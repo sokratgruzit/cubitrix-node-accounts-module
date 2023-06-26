@@ -664,7 +664,7 @@ async function get_account_balances(req, res) {
     //   data: account,
     // });
   } catch (e) {
-    console.log(e);
+    console.log(e, "get account balances");
     return main_helper.error_response(res, "error getting account");
   }
 }
