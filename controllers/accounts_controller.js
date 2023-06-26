@@ -530,7 +530,7 @@ async function activate_account(req, res) {
       account: newestAcc,
     });
   } catch (e) {
-    console.log(e);
+    console.log(e, "acc");
     return main_helper.error_response(res, "error updating accounts");
   }
 }
