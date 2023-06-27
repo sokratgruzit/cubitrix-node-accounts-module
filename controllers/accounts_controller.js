@@ -500,20 +500,28 @@ async function activate_account(req, res) {
         newestStakes.length === 0 ||
         !newestStakes.some((item) => item.staketime === result.staketime)
       ) {
-        const createdStake = await stakes.create({
-          amount: result.amount / 10 ** 18,
-          reward: result.reward / 10 ** 18,
-          address: address,
-          staketime: result.staketime,
-          unstaketime: result.unstaketime,
-        });
+        const [createdStake] = await Promise.all([
+          stakes.create({
+            amount: result.amount / 10 ** 18,
+            reward: result.reward / 10 ** 18,
+            address: address,
+            staketime: result.staketime,
+            unstaketime: result.unstaketime,
+          }),
+          accounts.findOneAndUpdate(
+            { account_owner: address, account_category: "main" },
+            { $inc: { balance: result.amount / 10 ** 18 } },
+            { new: true },
+          ),
+          create_deposit_transaction(
+            address,
+            result.amount / 10 ** 18,
+            "ether",
+            "deposit",
+          ),
+        ]);
+
         newestStakes = [...newestStakes, createdStake];
-        await create_deposit_transaction(
-          address,
-          result.amount / 10 ** 18,
-          "ether",
-          "deposit",
-        );
       }
     }
 
