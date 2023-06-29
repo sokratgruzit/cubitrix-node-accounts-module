@@ -180,14 +180,13 @@ async function create_different_accounts(req, res) {
   try {
     let { address, type } = req.body;
 
-    address = address.toLowerCase();
-
     if (address == undefined) {
       return main_helper.error_response(
         res,
         main_helper.error_message("missing some fields"),
       );
     }
+    address = address.toLowerCase();
 
     let option = await options.findOne({ key: "extension_options" });
 
