@@ -116,7 +116,6 @@ async function login_account(req, res) {
           account_category: "main",
           account_owner: address,
           active: false,
-          registered: false,
           step: 2,
         }),
         await accounts.create({
@@ -137,7 +136,7 @@ async function login_account(req, res) {
 
 async function handle_step(req, res) {
   try {
-    let { address, step, registered } = req.body;
+    let { address, step, active } = req.body;
 
     if (!address) {
       return main_helper.error_response(
@@ -161,7 +160,7 @@ async function handle_step(req, res) {
 
     const updatedMainAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
-      { step, registered },
+      { step, active },
       { new: true },
     );
 
@@ -180,14 +179,13 @@ async function create_different_accounts(req, res) {
   try {
     let { address, type } = req.body;
 
-    address = address.toLowerCase();
-
     if (address == undefined) {
       return main_helper.error_response(
         res,
         main_helper.error_message("missing some fields"),
       );
     }
+    address = address.toLowerCase();
 
     let option = await options.findOne({ key: "extension_options" });
 

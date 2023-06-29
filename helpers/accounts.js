@@ -1,84 +1,9 @@
-const {
-  accounts,
-  account_meta,
-  account_types,
-  verified_emails,
-} = require("@cubitrix/models");
+const { verified_emails } = require("@cubitrix/models");
 
 const main_helper = require("../helpers/index");
 const email_helper = require("../helpers/email_template");
 const crypto = require("crypto");
 var nodemailer = require("nodemailer");
-const { findOne } = require("@cubitrix/models/options");
-
-// checking if account meta data already exists
-async function check_account_meta_exists(address) {
-  try {
-    let find_meta = await account_meta.findOne({
-      address: address,
-    });
-    if (find_meta) {
-      return main_helper.success_message(true);
-    }
-
-    return main_helper.success_message(false);
-  } catch (e) {
-    return main_helper.error_message(e.message);
-  }
-}
-// method to check if account already exists in db
-async function check_account_exists(address, type_id) {
-  try {
-    let account = await accounts.findOne({
-      address: address,
-      account_type_id: type_id,
-    });
-
-    if (account && account?.address) {
-      return main_helper.success_message("Account found");
-    } else {
-      return main_helper.error_message("Account not Found");
-    }
-  } catch (e) {
-    return main_helper.error_message(e.message);
-  }
-}
-// method to check if account already exists in db
-async function check_account_with_type_exists(address, type_id) {
-  try {
-    let account = await accounts.findOne({
-      account_owner: address,
-      account_type_id: type_id,
-    });
-
-    if (account && account?.address) {
-      return main_helper.success_message("Account found");
-    } else {
-      return main_helper.error_message("Account not Found");
-    }
-  } catch (e) {
-    return main_helper.error_message(e.message);
-  }
-}
-// getting type id from db
-async function get_type_id(type_name) {
-  try {
-    let type = await account_types.findOne({ name: type_name }).exec();
-
-    if (type) {
-      let type_id = type._id;
-      return type_id.toString();
-    }
-    /*else {
-      await account_types.create({ name: type_name }).exec();
-      type = await account_types.findOne({ name: type_name }).exec();
-      return type._id;
-    }*/
-    return 0;
-  } catch (e) {
-    return main_helper.error_message(e.message);
-  }
-}
 
 // generate code for verification
 async function generate_verification_code() {
@@ -199,12 +124,8 @@ async function send_reset_password_email(email, verification_code) {
 }
 
 module.exports = {
-  check_account_meta_exists,
-  check_account_exists,
-  get_type_id,
   generate_verification_code,
   check_and_send_verification_email,
   send_reset_password_email,
   send_verification_mail,
-  check_account_with_type_exists,
 };
