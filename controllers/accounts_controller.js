@@ -508,7 +508,13 @@ async function activate_account(req, res) {
           }),
           accounts.findOneAndUpdate(
             { account_owner: address, account_category: "main" },
-            { $inc: { balance: result.amount / 10 ** 18 } },
+            {
+              $inc: {
+                balance: result.amount / 10 ** 18,
+                stakedThisMonth: result.amount / 10 ** 18,
+                stakedToday: result.amount / 10 ** 18,
+              },
+            },
             { new: true },
           ),
           create_deposit_transaction(
