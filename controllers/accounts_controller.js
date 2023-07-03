@@ -513,6 +513,7 @@ async function activate_account(req, res) {
                 balance: result.amount / 10 ** 18,
                 stakedThisMonth: result.amount / 10 ** 18,
                 stakedToday: result.amount / 10 ** 18,
+                stakedTotal: result.amount / 10 ** 18,
               },
             },
             { new: true },
@@ -608,6 +609,8 @@ async function manage_extensions(req, res) {
                 main_helper.error_message("insufficient balance"),
               );
             }
+          } else {
+            updateObj[`extensions.${key}`] = value;
           }
         } else {
           updateObj[`extensions.${key}`] = value;
