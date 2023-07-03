@@ -583,7 +583,35 @@ async function manage_extensions(req, res) {
 
     for (const [key, value] of Object.entries(extensions)) {
       if (accountMain.active) {
-        updateObj[`extensions.${key}`] = value;
+        if (key === "trade" && value === "true") {
+          const accountTrade = await accounts.findOne({
+            account_owner: address,
+            account_category: "trade",
+          });
+          if (!accountTrade) {
+            if (accountMain.balance > 2) {
+              const newAddress = await generate_new_address();
+              const [] = await Promise.all([
+                accountMain.updateOne({ $inc: { balance: 0 - 2 } }),
+                accounts.create({
+                  address: newAddress.toLowerCase(),
+                  balance: 0,
+                  account_category: "trade",
+                  account_owner: address,
+                  active: true,
+                }),
+              ]);
+              updateObj[`extensions.${key}`] = value;
+            } else {
+              return main_helper.error_response(
+                res,
+                main_helper.error_message("insufficient balance"),
+              );
+            }
+          }
+        } else {
+          updateObj[`extensions.${key}`] = value;
+        }
       } else if (!accountMain.active) {
         if (["staking", "referral", "notify"].includes(key)) {
           updateObj[`extensions.${key}`] = value;
