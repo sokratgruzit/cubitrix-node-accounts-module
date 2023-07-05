@@ -725,9 +725,9 @@ async function update_current_rates() {
 
     const ratesObj = await rates.findOne();
 
-    ratesObj.btc = bitcoin;
-    ratesObj.eth = ethereum;
-    ratesObj.usdt = tether;
+    ratesObj.btc.value = bitcoin.usd;
+    ratesObj.eth.value = ethereum.usd;
+    ratesObj.usdt.value = tether.usd;
     await ratesObj.save();
   } catch (error) {
     console.error("Error fetching rates:", error);
