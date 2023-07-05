@@ -15,6 +15,8 @@ const {
   create_deposit_transaction,
 } = require("@cubitrix/cubitrix-node-transactions-module");
 
+const axios = require("axios");
+
 const jwt = require("jsonwebtoken");
 const web3_accounts = require("web3-eth-accounts");
 

@@ -1,6 +1,6 @@
 {
   "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "module for managing accounts data",
   "main": "accounts.js",
   "scripts": {
@@ -28,7 +28,8 @@
   "peerDependencies": {
     "async-mutex": ">=0.4.0",
     "@cubitrix/cubitrix-node-transactions-module": ">=0.0.87",
-    "@cubitrix/models": ">=0.0.65"
+    "@cubitrix/models": ">=0.0.65",
+    "axios": "^1.4.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.20"
