@@ -9,6 +9,7 @@ const {
   verified_emails,
   options,
   stakes,
+  rates,
 } = require("@cubitrix/models");
 
 const {
@@ -722,12 +723,12 @@ async function update_current_rates() {
     );
     const { bitcoin, ethereum, tether } = response.data;
 
-    const rates = await Rates.findOne();
+    const ratesObj = await rates.findOne();
 
-    rates.btc = bitcoin;
-    rates.eth = ethereum;
-    rates.usdt = tether;
-    await rates.save();
+    ratesObj.btc = bitcoin;
+    ratesObj.eth = ethereum;
+    ratesObj.usdt = tether;
+    await ratesObj.save();
   } catch (error) {
     console.error("Error fetching rates:", error);
   }
