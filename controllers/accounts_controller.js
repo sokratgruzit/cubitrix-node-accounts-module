@@ -497,7 +497,7 @@ async function activate_account(req, res) {
       if (
         (newestStakes.length === 0 ||
           !newestStakes.some((item) => item.staketime === result.staketime)) &&
-        !unstaked
+        !result.unstaked
       ) {
         const [createdStake] = await Promise.all([
           stakes.create({
