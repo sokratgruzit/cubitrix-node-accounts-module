@@ -713,6 +713,24 @@ async function get_account_balances(req, res) {
   }
 }
 
+async function update_current_rates() {
+  try {
+    const response = await axios.get(
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd",
+    );
+    const { bitcoin, ethereum, tether } = response.data;
+
+    const rates = await Rates.findOne();
+
+    rates.btc = bitcoin;
+    rates.eth = ethereum;
+    rates.usdt = tether;
+    await rates.save();
+  } catch (error) {
+    console.error("Error fetching rates:", error);
+  }
+}
+
 module.exports = {
   index,
   login_account,
@@ -727,4 +745,5 @@ module.exports = {
   get_account_balances,
   handle_step,
   // open_utility_accounts,
+  update_current_rates,
 };
