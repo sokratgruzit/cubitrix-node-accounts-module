@@ -390,6 +390,7 @@ async function get_account(req, res) {
       results[0].hasPasswordSet = auth_acc?.password ? true : false;
       results[0].otp_enabled = auth_acc?.otp_enabled;
       results[0].otp_verified = auth_acc?.otp_verified;
+      results[0].stakedTotal = results[0].stakedTotal || 0; // Check if stakedTotal exists, otherwise set it to 0
     }
 
     res.status(200).json(
