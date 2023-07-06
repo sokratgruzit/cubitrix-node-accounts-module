@@ -734,6 +734,17 @@ async function update_current_rates() {
   }
 }
 
+async function get_rates() {
+  try {
+    const ratesObj = await rates.findOne();
+
+    res.status(200).json(ratesObj);
+  } catch (e) {
+    console.log(e);
+    res.status(500).json("failed to get rates");
+  }
+}
+
 module.exports = {
   index,
   login_account,
@@ -749,4 +760,5 @@ module.exports = {
   handle_step,
   // open_utility_accounts,
   update_current_rates,
+  get_rates,
 };

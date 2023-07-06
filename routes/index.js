@@ -48,7 +48,9 @@ router.post("/create_different_accounts", account_controller.create_different_ac
 router.post("/manage_extensions", account_controller.manage_extensions);
 // roles
 router.get("/roles", roles_controller.index);
+
 router.post("/get_account_balances", account_controller.get_account_balances);
+router.get("/get_rates", account_controller.get_rates);
 
 // get all account
 
