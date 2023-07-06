@@ -734,7 +734,7 @@ async function update_current_rates() {
   }
 }
 
-async function get_rates() {
+async function get_rates(req, res) {
   try {
     const ratesObj = await rates.findOne();
 
