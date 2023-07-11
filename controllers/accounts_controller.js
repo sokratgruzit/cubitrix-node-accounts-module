@@ -728,9 +728,9 @@ async function update_current_rates() {
 
     const ratesObj = await rates.findOne();
 
-    ratesObj.btc.value = bitcoin.usd;
-    ratesObj.eth.value = ethereum.usd;
-    ratesObj.usdt.value = tether.usd;
+    ratesObj.btc.usd = bitcoin.usd;
+    ratesObj.eth.usd = ethereum.usd;
+    ratesObj.usdt.usd = tether.usd;
     const response1 = await ratesObj.save();
 
     console.log(response1, "sd");
