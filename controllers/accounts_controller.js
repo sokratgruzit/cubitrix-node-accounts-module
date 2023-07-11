@@ -724,16 +724,12 @@ async function update_current_rates() {
     );
     const { bitcoin, ethereum, tether } = response.data;
 
-    console.log(bitcoin, ethereum);
-
     const ratesObj = await rates.findOne();
 
     ratesObj.btc.usd = bitcoin.usd;
     ratesObj.eth.usd = ethereum.usd;
     ratesObj.usdt.usd = tether.usd;
-    const response1 = await ratesObj.save();
-
-    console.log(response1, "sd");
+    await ratesObj.save();
   } catch (error) {
     console.error("Error fetching rates:", error);
   }
