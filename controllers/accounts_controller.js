@@ -460,12 +460,12 @@ async function activate_account(req, res) {
 
     address = address.toLowerCase();
 
-    const account = await accounts.findOne({
+    let newestAcc = await accounts.findOne({
       account_owner: address,
       account_category: "main",
     });
 
-    if (!account) {
+    if (!newestAcc) {
       return main_helper.error_response(
         res,
         main_helper.error_message("account not found"),
@@ -503,6 +503,46 @@ async function activate_account(req, res) {
           !newestStakes.some((item) => item.staketime === result.staketime)) &&
         !result.unstaked
       ) {
+        newestAcc = await accounts.findOne({
+          account_owner: address,
+          account_category: "main",
+        });
+
+        let updateObj = {};
+        if (newestAcc.tier.value !== "basic") {
+          let stakedAmount = result.amount / 10 ** 18;
+          if (!newestAcc.tier.value) {
+            updateObj.amount = stakedAmount;
+            switch (stakedAmount) {
+              case stakedAmount >= 100 && stakedAmount < 500:
+                updateObj.value === "basic";
+              case stakedAmount >= 5000 && stakedAmount < 20000:
+                updateObj.value === "gold";
+                break;
+              case stakedAmount >= 20000 && stakedAmount < 100000:
+                updateObj.value === "diamond";
+              case stakedAmount > 100000:
+                updateObj.value === "vip";
+              default:
+                break;
+            }
+          } else {
+            const newAmount = newestAcc.tier.amount + stakedAmount;
+            updateObj.amount = newAmount;
+            switch (newAmount) {
+              case newAmount >= 5000 && newAmount < 20000:
+                updateObj.value === "gold";
+                break;
+              case newAmount >= 20000 && newAmount < 100000:
+                updateObj.value === "diamond";
+              case newAmount > 100000:
+                updateObj.value === "vip";
+              default:
+                break;
+            }
+          }
+        }
+
         const [createdStake] = await Promise.all([
           stakes.create({
             amount: result.amount / 10 ** 18,
@@ -520,6 +560,7 @@ async function activate_account(req, res) {
                 stakedToday: result.amount / 10 ** 18,
                 stakedTotal: result.amount / 10 ** 18,
               },
+              tier: updateObj,
             },
             { new: true },
           ),
@@ -537,11 +578,6 @@ async function activate_account(req, res) {
 
     mutex.release();
     delete mutexes[address];
-
-    const newestAcc = await accounts.findOne({
-      account_owner: address,
-      account_category: "main",
-    });
 
     return main_helper.success_response(res, {
       message: "success",
