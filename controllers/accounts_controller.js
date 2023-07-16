@@ -3,13 +3,13 @@ const account_helper = require("../helpers/accounts");
 const {
   accounts,
   account_meta,
+  account_auth,
+  rates,
   account_balances,
   accounts_keys,
-  account_auth,
   verified_emails,
   options,
   stakes,
-  rates,
 } = require("@cubitrix/models");
 
 const {
@@ -511,34 +511,27 @@ async function activate_account(req, res) {
         let updateObj = {};
         if (newestAcc?.tier?.value !== "basic") {
           let stakedAmount = result.amount / 10 ** 18;
+
           if (!newestAcc?.tier?.value) {
             updateObj.amount = stakedAmount;
-            switch (stakedAmount) {
-              case stakedAmount >= 100 && stakedAmount < 500:
-                updateObj.value === "basic";
-              case stakedAmount >= 5000 && stakedAmount < 20000:
-                updateObj.value === "gold";
-                break;
-              case stakedAmount >= 20000 && stakedAmount < 100000:
-                updateObj.value === "diamond";
-              case stakedAmount > 100000:
-                updateObj.value === "vip";
-              default:
-                break;
+            if (stakedAmount >= 100 && stakedAmount < 500) {
+              updateObj.value = "basic";
+            } else if (stakedAmount >= 5000 && stakedAmount < 20000) {
+              updateObj.value = "gold";
+            } else if (stakedAmount >= 20000 && stakedAmount < 100000) {
+              updateObj.value = "diamond";
+            } else if (stakedAmount > 100000) {
+              updateObj.value = "vip";
             }
           } else {
             const newAmount = newestAcc?.tier?.amount + stakedAmount;
             updateObj.amount = newAmount;
-            switch (newAmount) {
-              case newAmount >= 5000 && newAmount < 20000:
-                updateObj.value === "gold";
-                break;
-              case newAmount >= 20000 && newAmount < 100000:
-                updateObj.value === "diamond";
-              case newAmount > 100000:
-                updateObj.value === "vip";
-              default:
-                break;
+            if (newAmount >= 5000 && newAmount < 20000) {
+              updateObj.value = "gold";
+            } else if (newAmount >= 20000 && newAmount < 100000) {
+              updateObj.value = "diamond";
+            } else if (newAmount > 100000) {
+              updateObj.value = "vip";
             }
           }
         }
@@ -776,7 +769,6 @@ async function update_current_rates() {
 async function get_rates(req, res) {
   try {
     const ratesObj = await rates.findOne();
-
     res.status(200).json(ratesObj);
   } catch (e) {
     console.log(e);
