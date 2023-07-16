@@ -509,9 +509,9 @@ async function activate_account(req, res) {
         });
 
         let updateObj = {};
-        if (newestAcc.tier.value !== "basic") {
+        if (newestAcc?.tier?.value !== "basic") {
           let stakedAmount = result.amount / 10 ** 18;
-          if (!newestAcc.tier.value) {
+          if (!newestAcc?.tier?.value) {
             updateObj.amount = stakedAmount;
             switch (stakedAmount) {
               case stakedAmount >= 100 && stakedAmount < 500:
@@ -527,7 +527,7 @@ async function activate_account(req, res) {
                 break;
             }
           } else {
-            const newAmount = newestAcc.tier.amount + stakedAmount;
+            const newAmount = newestAcc?.tier?.amount + stakedAmount;
             updateObj.amount = newAmount;
             switch (newAmount) {
               case newAmount >= 5000 && newAmount < 20000:
