@@ -618,12 +618,12 @@ async function manage_extensions(req, res) {
 
     for (const [key, value] of Object.entries(extensions)) {
       if (accountMain.active) {
-        if (key === "trade" && value === "true") {
-          const accountTrade = await accounts.findOne({
+        if ((key === "trade" || key === "loan") && value === "true") {
+          const accountExtension = await accounts.findOne({
             account_owner: address,
-            account_category: "trade",
+            account_category: key,
           });
-          if (!accountTrade) {
+          if (!accountExtension) {
             if (accountMain.balance > 2) {
               const newAddress = await generate_new_address();
               const [] = await Promise.all([
@@ -631,7 +631,7 @@ async function manage_extensions(req, res) {
                 accounts.create({
                   address: newAddress.toLowerCase(),
                   balance: 0,
-                  account_category: "trade",
+                  account_category: key,
                   account_owner: address,
                   active: true,
                 }),
