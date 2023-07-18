@@ -514,7 +514,7 @@ async function activate_account(req, res) {
 
           if (!newestAcc?.tier?.value) {
             updateObj.amount = stakedAmount;
-            if (stakedAmount >= 100 && stakedAmount < 500) {
+            if (stakedAmount >= 100 && stakedAmount <= 500) {
               updateObj.value = "basic";
             } else if (stakedAmount >= 5000 && stakedAmount < 20000) {
               updateObj.value = "gold";
