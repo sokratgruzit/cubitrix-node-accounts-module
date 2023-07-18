@@ -749,16 +749,16 @@ async function get_account_balances(req, res) {
 async function update_current_rates() {
   try {
     const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,tether&vs_currencies=usd",
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin&vs_currencies=usd",
     );
-    const { bitcoin, ethereum, tether } = response.data;
+    const { bitcoin, ethereum } = response.data;
 
     await rates.findOneAndUpdate(
       {},
       {
         btc: { usd: bitcoin.usd },
         eth: { usd: ethereum.usd },
-        usdt: { usd: tether.usd },
+        usdc: { usd: response.data?.["usd-coin"]?.usd },
       },
     );
   } catch (error) {
