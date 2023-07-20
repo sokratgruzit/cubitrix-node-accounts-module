@@ -524,7 +524,6 @@ async function activate_account(req, res) {
               updateObj.value = "vip";
             }
           } else {
-            x;
             const newAmount = newestAcc?.tier?.amount + stakedAmount;
             updateObj.amount = newAmount;
             if (newAmount >= 5000 && newAmount < 20000) {
@@ -536,8 +535,6 @@ async function activate_account(req, res) {
             }
           }
         }
-
-        console.log(updateObj, "updateObj");
 
         const [createdStake] = await Promise.all([
           stakes.create({
