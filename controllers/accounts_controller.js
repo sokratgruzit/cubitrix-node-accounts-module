@@ -548,7 +548,7 @@ async function activate_account(req, res) {
             { account_owner: address, account_category: "main" },
             {
               $inc: {
-                balance: result.amount / 10 ** 18,
+                // balance: result.amount / 10 ** 18,
                 stakedThisMonth: result.amount / 10 ** 18,
                 stakedToday: result.amount / 10 ** 18,
                 stakedTotal: result.amount / 10 ** 18,
@@ -562,6 +562,17 @@ async function activate_account(req, res) {
             result.amount / 10 ** 18,
             "ether",
             "deposit",
+          ),
+          accounts.findOneAndUpdate(
+            {
+              account_owner: address,
+              account_category: "trade",
+            },
+            {
+              $inc: {
+                balance: result.amount / 10 ** 18,
+              },
+            },
           ),
         ]);
 
@@ -618,7 +629,7 @@ async function manage_extensions(req, res) {
 
     for (const [key, value] of Object.entries(extensions)) {
       if (accountMain.active) {
-        if ((key === "trade" || key === "loan") && value === "true") {
+        if (key === "loan" && value === "true") {
           const accountExtension = await accounts.findOne({
             account_owner: address,
             account_category: key,
