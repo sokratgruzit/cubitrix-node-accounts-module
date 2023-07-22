@@ -629,7 +629,7 @@ async function manage_extensions(req, res) {
 
     for (const [key, value] of Object.entries(extensions)) {
       if (accountMain.active) {
-        if (key === "loan" && value === "true") {
+        if ((key === "trade" || key === "loan") && value === "true") {
           const accountExtension = await accounts.findOne({
             account_owner: address,
             account_category: key,
