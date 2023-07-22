@@ -782,6 +782,8 @@ async function manage_extensions(req, res) {
       }
     }
 
+    // console.log(updateObj, "updateObj");
+
     const updatedAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
       { $set: updateObj },
