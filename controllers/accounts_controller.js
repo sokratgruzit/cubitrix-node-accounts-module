@@ -726,6 +726,7 @@ async function manage_extensions(req, res) {
 
     for (const [key, value] of Object.entries(extensions)) {
       if (accountMain.active) {
+        console.log(key, value);
         if (key === "loan" && value === "true") {
           const accountExtension = await accounts.findOne({
             account_owner: address,
@@ -759,15 +760,17 @@ async function manage_extensions(req, res) {
             account_owner: address,
             account_category: key,
           });
+          console.log("tradeACC", accountExtension);
           if (!accountExtension) {
             const newAddress = await generate_new_address();
-            await accounts.create({
+            const newTradeCreated = await accounts.create({
               address: newAddress.toLowerCase(),
               balance: 0,
               account_category: key,
               account_owner: address,
               active: true,
             });
+            console.log(newTradeCreated, "newTradeCreated");
             updateObj[`extensions.${key}`] = value;
           } else {
             updateObj[`extensions.${key}`] = value;
@@ -782,7 +785,7 @@ async function manage_extensions(req, res) {
       }
     }
 
-    // console.log(updateObj, "updateObj");
+    console.log(updateObj, "updateObj");
 
     const updatedAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
