@@ -891,6 +891,8 @@ async function update_current_rates() {
         btc: { usd: bitcoin.usd },
         eth: { usd: ethereum.usd },
         usdc: { usd: response.data?.["usd-coin"]?.usd },
+        gold: { usd: 1961 },
+        platinum: { usd: 966 },
       },
     );
   } catch (error) {
