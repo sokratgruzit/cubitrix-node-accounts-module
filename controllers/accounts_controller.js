@@ -692,7 +692,7 @@ async function activate_account(req, res) {
 
 async function manage_extensions(req, res) {
   try {
-    let { address, extensions } = req.body;
+    let { address, extensions, setup } = req.body;
 
     if (!address || !extensions) {
       return main_helper.error_response(
@@ -725,8 +725,31 @@ async function manage_extensions(req, res) {
     const updateObj = {};
 
     for (const [key, value] of Object.entries(extensions)) {
-      if (accountMain.active) {
-        console.log(key, value);
+      if (setup) {
+        if (key === "trade" && value === "true") {
+          const accountExtension = await accounts.findOne({
+            account_owner: address,
+            account_category: key,
+          });
+          if (!accountExtension) {
+            const newAddress = await generate_new_address();
+            const [] = await Promise.all([
+              accounts.create({
+                address: newAddress.toLowerCase(),
+                balance: 0,
+                account_category: key,
+                account_owner: address,
+                active: true,
+              }),
+            ]);
+            updateObj[`extensions.${key}`] = value;
+          } else {
+            updateObj[`extensions.${key}`] = value;
+          }
+        } else {
+          updateObj[`extensions.${key}`] = value;
+        }
+      } else if (accountMain.active) {
         if (key === "loan" && value === "true") {
           const accountExtension = await accounts.findOne({
             account_owner: address,
@@ -755,37 +778,15 @@ async function manage_extensions(req, res) {
           } else {
             updateObj[`extensions.${key}`] = value;
           }
-        } else if (key === "trade" && value === "true") {
-          const accountExtension = await accounts.findOne({
-            account_owner: address,
-            account_category: key,
-          });
-          console.log("tradeACC", accountExtension);
-          if (!accountExtension) {
-            const newAddress = await generate_new_address();
-            const newTradeCreated = await accounts.create({
-              address: newAddress.toLowerCase(),
-              balance: 0,
-              account_category: key,
-              account_owner: address,
-              active: true,
-            });
-            console.log(newTradeCreated, "newTradeCreated");
-            updateObj[`extensions.${key}`] = value;
-          } else {
-            updateObj[`extensions.${key}`] = value;
-          }
         } else {
           updateObj[`extensions.${key}`] = value;
         }
       } else if (!accountMain.active) {
-        if (["staking", "referral", "notify"].includes(key)) {
+        if (["staking", "notify"].includes(key)) {
           updateObj[`extensions.${key}`] = value;
         }
       }
     }
-
-    console.log(updateObj, "updateObj");
 
     const updatedAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
