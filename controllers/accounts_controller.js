@@ -509,29 +509,29 @@ async function activate_account(req, res) {
         });
 
         let updateObj = {};
-        if (newestAcc?.tier?.value !== "basic") {
+        if (newestAcc?.tier?.value !== "Novice Navigator") {
           let stakedAmount = result.amount / 10 ** 18;
 
           if (!newestAcc?.tier?.value) {
             updateObj.amount = stakedAmount;
             if (stakedAmount <= 500) {
-              updateObj.value = "basic";
+              updateObj.value = "Novice Navigator";
             } else if (stakedAmount >= 5000 && stakedAmount < 20000) {
-              updateObj.value = "gold";
+              updateObj.value = "Stellar Standard";
             } else if (stakedAmount >= 20000 && stakedAmount < 100000) {
-              updateObj.value = "diamond";
+              updateObj.value = "Expert Edge";
             } else if (stakedAmount > 100000) {
-              updateObj.value = "vip";
+              updateObj.value = "Platinum Privilege";
             }
           } else {
             const newAmount = newestAcc?.tier?.amount + stakedAmount;
             updateObj.amount = newAmount;
             if (newAmount >= 5000 && newAmount < 20000) {
-              updateObj.value = "gold";
+              updateObj.value = "Stellar Standard";
             } else if (newAmount >= 20000 && newAmount < 100000) {
-              updateObj.value = "diamond";
+              updateObj.value = "Expert Edge";
             } else if (newAmount > 100000) {
-              updateObj.value = "vip";
+              updateObj.value = "Platinum Privilege";
             }
           }
         }
