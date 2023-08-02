@@ -941,7 +941,7 @@ async function get_recepient_name(req, res) {
 
     address = address.toLowerCase();
 
-    const userAccount = account_meta.findOne({ address });
+    const userAccount = await account_meta.findOne({ address });
 
     if (!userAccount) {
       return main_helper.error_response(
@@ -949,10 +949,9 @@ async function get_recepient_name(req, res) {
         main_helper.error_message("No such account exists"),
       );
     }
-
     return main_helper.success_response(res, {
       message: "success",
-      name: hideName(userAccount.name),
+      name: hideName(userAccount?.name ?? ""),
     });
   } catch (e) {
     console.log(e, "error getting recepient name");
@@ -961,13 +960,13 @@ async function get_recepient_name(req, res) {
 }
 
 function hideName(name) {
-  if (name.length <= 2) {
+  if (name?.length <= 2) {
     return name;
   }
 
-  const firstLetter = name.charAt(0);
-  const lastLetter = name.charAt(name.length - 1);
-  const middleAsterisks = "*".repeat(name.length - 2);
+  const firstLetter = name?.charAt(0);
+  const lastLetter = name?.charAt(name?.length - 1);
+  const middleAsterisks = "*".repeat(name?.length - 2);
 
   return firstLetter + middleAsterisks + lastLetter;
 }
