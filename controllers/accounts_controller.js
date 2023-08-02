@@ -921,6 +921,57 @@ async function get_rates(req, res) {
   }
 }
 
+async function get_recepient_name(req, res) {
+  try {
+    let { address } = req.body;
+
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("address is required"),
+      );
+    }
+
+    if (address.length < 42) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("address is not valid"),
+      );
+    }
+
+    address = address.toLowerCase();
+
+    const userAccount = account_meta.findOne({ address });
+
+    if (!userAccount) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("No such account exists"),
+      );
+    }
+
+    return main_helper.success_response(res, {
+      message: "success",
+      name: hideName(userAccount.name),
+    });
+  } catch (e) {
+    console.log(e, "error getting recepient name");
+    res.status(500).json("failed to get recepient name");
+  }
+}
+
+function hideName(name) {
+  if (name.length <= 2) {
+    return name;
+  }
+
+  const firstLetter = name.charAt(0);
+  const lastLetter = name.charAt(name.length - 1);
+  const middleAsterisks = "*".repeat(name.length - 2);
+
+  return firstLetter + middleAsterisks + lastLetter;
+}
+
 module.exports = {
   index,
   login_account,
@@ -937,4 +988,5 @@ module.exports = {
   // open_utility_accounts,
   update_current_rates,
   get_rates,
+  get_recepient_name,
 };
