@@ -932,7 +932,7 @@ async function get_recepient_name(req, res) {
       );
     }
 
-    if (address.length < 42) {
+    if (address?.length < 42) {
       return main_helper.error_response(
         res,
         main_helper.error_message("address is not valid"),
