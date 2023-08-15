@@ -482,6 +482,23 @@ async function activate_account(req, res) {
     let newestStakes = userStakes;
     let loopCount = userStakes.length - 1;
 
+    let todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
+    let monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
+
+    let incrementMonthly = 0;
+    let incrementDaily = 0;
+    if (result.staketime * 1000 >= todayWithWiggle) {
+      incrementDaily = result.amount / 10 ** 18;
+    } else {
+      incrementDaily = 0;
+    }
+
+    if (result.staketime * 1000 >= monthWithWiggle) {
+      incrementMonthly = result.amount / 10 ** 18;
+    } else {
+      incrementMonthly = 0;
+    }
+
     if (mutexes[address]) {
       return main_helper.error_response(res, "account is currently being updated");
     }
@@ -548,9 +565,8 @@ async function activate_account(req, res) {
             { account_owner: address, account_category: "main" },
             {
               $inc: {
-                // balance: result.amount / 10 ** 18,
-                stakedThisMonth: result.amount / 10 ** 18,
-                stakedToday: result.amount / 10 ** 18,
+                stakedThisMonth: incrementMonthly,
+                stakedToday: incrementDaily,
                 stakedTotal: result.amount / 10 ** 18,
               },
               tier: updateObj,
