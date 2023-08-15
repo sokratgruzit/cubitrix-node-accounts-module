@@ -53,6 +53,8 @@ router.post("/get_account_balances", account_controller.get_account_balances);
 router.get("/get_rates", account_controller.get_rates);
 router.post("/get_recepient_name", account_controller.get_recepient_name);
 
+router.post("/stake_currency", account_controller.stakeCurrency);
+
 // get all account
 
 module.exports = router;
