@@ -487,17 +487,6 @@ async function activate_account(req, res) {
 
     let incrementMonthly = 0;
     let incrementDaily = 0;
-    if (result.staketime * 1000 >= todayWithWiggle) {
-      incrementDaily = result.amount / 10 ** 18;
-    } else {
-      incrementDaily = 0;
-    }
-
-    if (result.staketime * 1000 >= monthWithWiggle) {
-      incrementMonthly = result.amount / 10 ** 18;
-    } else {
-      incrementMonthly = 0;
-    }
 
     if (mutexes[address]) {
       return main_helper.error_response(res, "account is currently being updated");
@@ -551,6 +540,18 @@ async function activate_account(req, res) {
               updateObj.value = "Platinum Privilege";
             }
           }
+        }
+
+        if (result.staketime * 1000 >= todayWithWiggle) {
+          incrementDaily = result.amount / 10 ** 18;
+        } else {
+          incrementDaily = 0;
+        }
+
+        if (result.staketime * 1000 >= monthWithWiggle) {
+          incrementMonthly = result.amount / 10 ** 18;
+        } else {
+          incrementMonthly = 0;
         }
 
         const [createdStake] = await Promise.all([
