@@ -54,7 +54,7 @@ router.get("/get_rates", account_controller.get_rates);
 router.post("/get_recepient_name", account_controller.get_recepient_name);
 
 router.post("/stake_currency", account_controller.stakeCurrency);
-router.post("/check_email", account_meta_controller.check_email);
+router.post("/check-email", account_meta_controller.check_email);
 // get all account
 
 module.exports = router;

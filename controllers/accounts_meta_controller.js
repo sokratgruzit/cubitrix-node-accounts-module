@@ -272,9 +272,15 @@ async function check_email(req, res) {
     const emailExists = await account_meta.findOne({ email });
     
     if (emailExists) {
-      return main_helper.error_response(res, "This email already taken");
+      return main_helper.success_response(res, {
+        msg: "This email already taken",
+        status: false
+      });
     } else {
-      return main_helper.success_response(res, "This email is available");
+      return main_helper.success_response(res, {
+        msg: "This email is available",
+        status: true
+      });
     }
   } catch (e) {
     console.log(e);
