@@ -265,6 +265,23 @@ async function resend_email(req, res) {
   }
 }
 
+async function check_email(req, res) {
+  let { email } = req.body;
+
+  try {
+    const emailExists = await account_meta.findOne({ email });
+    
+    if (emailExists) {
+      return main_helper.error_response(res, "This email already taken");
+    } else {
+      return main_helper.success_response(res, "This email is available");
+    }
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_response(res, "Something went wrong");
+  }
+}
+
 async function get_reset_password_email(req, res) {
   try {
     let { email } = req.body;
@@ -315,4 +332,5 @@ module.exports = {
   resend_email,
   get_reset_password_email,
   reset_password,
+  check_email
 };

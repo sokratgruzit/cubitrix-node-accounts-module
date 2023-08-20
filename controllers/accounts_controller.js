@@ -3,17 +3,21 @@ const account_helper = require("../helpers/accounts");
 const {
   accounts,
   account_meta,
+  account_auth,
+  rates,
   account_balances,
   accounts_keys,
-  account_auth,
   verified_emails,
   options,
   stakes,
+  currencyStakes,
 } = require("@cubitrix/models");
 
 const {
   create_deposit_transaction,
 } = require("@cubitrix/cubitrix-node-transactions-module");
+
+const axios = require("axios");
 
 const jwt = require("jsonwebtoken");
 const web3_accounts = require("web3-eth-accounts");
@@ -387,6 +391,7 @@ async function get_account(req, res) {
       results[0].hasPasswordSet = auth_acc?.password ? true : false;
       results[0].otp_enabled = auth_acc?.otp_enabled;
       results[0].otp_verified = auth_acc?.otp_verified;
+      results[0].stakedTotal = results[0].stakedTotal || 0; // Check if stakedTotal exists, otherwise set it to 0
     }
 
     res.status(200).json(
@@ -456,12 +461,12 @@ async function activate_account(req, res) {
 
     address = address.toLowerCase();
 
-    const account = await accounts.findOne({
+    let newestAcc = await accounts.findOne({
       account_owner: address,
       account_category: "main",
     });
 
-    if (!account) {
+    if (!newestAcc) {
       return main_helper.error_response(
         res,
         main_helper.error_message("account not found"),
@@ -477,6 +482,12 @@ async function activate_account(req, res) {
     let condition = true;
     let newestStakes = userStakes;
     let loopCount = userStakes.length - 1;
+
+    let todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
+    let monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
+
+    let incrementMonthly = 0;
+    let incrementDaily = 0;
 
     if (mutexes[address]) {
       return main_helper.error_response(res, "account is currently being updated");
@@ -495,9 +506,55 @@ async function activate_account(req, res) {
       }
 
       if (
-        newestStakes.length === 0 ||
-        !newestStakes.some((item) => item.staketime === result.staketime)
+        (newestStakes.length === 0 ||
+          !newestStakes.some((item) => item.staketime === result.staketime)) &&
+        !result.unstaked
       ) {
+        newestAcc = await accounts.findOne({
+          account_owner: address,
+          account_category: "main",
+        });
+
+        let updateObj = {};
+        if (newestAcc?.tier?.value !== "Novice Navigator") {
+          let stakedAmount = result.amount / 10 ** 18;
+
+          if (!newestAcc?.tier?.value) {
+            updateObj.amount = stakedAmount;
+            if (stakedAmount <= 500) {
+              updateObj.value = "Novice Navigator";
+            } else if (stakedAmount >= 5000 && stakedAmount < 20000) {
+              updateObj.value = "Stellar Standard";
+            } else if (stakedAmount >= 20000 && stakedAmount < 100000) {
+              updateObj.value = "Expert Edge";
+            } else if (stakedAmount > 100000) {
+              updateObj.value = "Platinum Privilege";
+            }
+          } else {
+            const newAmount = newestAcc?.tier?.amount + stakedAmount;
+            updateObj.amount = newAmount;
+            if (newAmount >= 5000 && newAmount < 20000) {
+              updateObj.value = "Stellar Standard";
+            } else if (newAmount >= 20000 && newAmount < 100000) {
+              updateObj.value = "Expert Edge";
+            } else if (newAmount > 100000) {
+              updateObj.value = "Platinum Privilege";
+            }
+          }
+        }
+
+        if (result.staketime * 1000 >= todayWithWiggle) {
+          incrementDaily = result.amount / 10 ** 18;
+        } else {
+          incrementDaily = 0;
+        }
+
+        if (result.staketime * 1000 >= monthWithWiggle) {
+          incrementMonthly = result.amount / 10 ** 18;
+        } else {
+          incrementMonthly = 0;
+        }
+
         const [createdStake] = await Promise.all([
           stakes.create({
             amount: result.amount / 10 ** 18,
@@ -508,7 +565,14 @@ async function activate_account(req, res) {
           }),
           accounts.findOneAndUpdate(
             { account_owner: address, account_category: "main" },
-            { $inc: { balance: result.amount / 10 ** 18 } },
+            {
+              $inc: {
+                stakedThisMonth: incrementMonthly,
+                stakedToday: incrementDaily,
+                stakedTotal: result.amount / 10 ** 18,
+              },
+              tier: updateObj,
+            },
             { new: true },
           ),
           create_deposit_transaction(
@@ -516,6 +580,17 @@ async function activate_account(req, res) {
             result.amount / 10 ** 18,
             "ether",
             "deposit",
+          ),
+          accounts.findOneAndUpdate(
+            {
+              account_owner: address,
+              account_category: "trade",
+            },
+            {
+              $inc: {
+                balance: result.amount / 10 ** 18,
+              },
+            },
           ),
         ]);
 
@@ -525,11 +600,6 @@ async function activate_account(req, res) {
 
     mutex.release();
     delete mutexes[address];
-
-    const newestAcc = await accounts.findOne({
-      account_owner: address,
-      account_category: "main",
-    });
 
     return main_helper.success_response(res, {
       message: "success",
@@ -541,9 +611,106 @@ async function activate_account(req, res) {
   }
 }
 
+// async function manage_extensions(req, res) {
+//   try {
+//     let { address, extensions } = req.body;
+
+//     if (!address || !extensions) {
+//       return main_helper.error_response(
+//         res,
+//         main_helper.error_message("missing some fields"),
+//       );
+//     }
+
+//     address = address.toLowerCase();
+
+//     const [accountMain, accountMeta] = await Promise.all([
+//       accounts.findOne({ account_owner: address, account_category: "main" }),
+//       account_meta.findOne({ address: address }),
+//     ]);
+
+//     if (!accountMain) {
+//       return main_helper.error_response(
+//         res,
+//         main_helper.error_message("account not found"),
+//       );
+//     }
+
+//     if (!accountMeta.email) {
+//       return main_helper.error_response(
+//         res,
+//         main_helper.error_message("account not verified"),
+//       );
+//     }
+
+//     const updateObj = {};
+
+//     for (const [key, value] of Object.entries(extensions)) {
+//       if (accountMain.active) {
+//         const accountExtension = await accounts.findOne({
+//           account_owner: address,
+//           account_category: key,
+//         });
+
+//         if (key === "loan" && value === "true" && !accountExtension) {
+//           if (accountMain.balance > 2) {
+//             const newAddress = await generate_new_address();
+//             const [] = await Promise.all([
+//               accountMain.updateOne({ $inc: { balance: 0 - 2 } }),
+//               accounts.create({
+//                 address: newAddress.toLowerCase(),
+//                 balance: 0,
+//                 account_category: key,
+//                 account_owner: address,
+//                 active: true,
+//               }),
+//             ]);
+//             updateObj[`extensions.${key}`] = value;
+//           } else {
+//             return main_helper.error_response(
+//               res,
+//               main_helper.error_message("insufficient balance"),
+//             );
+//           }
+//         } else if (key === "trade" && value === "true" && !accountExtension) {
+//           const newAddress = await generate_new_address();
+//           await accounts.create({
+//             address: newAddress.toLowerCase(),
+//             balance: 0,
+//             account_category: key,
+//             account_owner: address,
+//             active: true,
+//           });
+//           updateObj[`extensions.${key}`] = value;
+//         } else {
+//           updateObj[`extensions.${key}`] = value;
+//         }
+//       } else if (!accountMain.active) {
+//         if (["staking", "referral", "notify"].includes(key)) {
+//           updateObj[`extensions.${key}`] = value;
+//         }
+//       }
+//     }
+
+//     const updatedAccount = await accounts.findOneAndUpdate(
+//       { account_owner: address, account_category: "main" },
+//       { $set: updateObj },
+//       { new: true },
+//     );
+
+//     return main_helper.success_response(res, {
+//       message: "success",
+//       account: updatedAccount,
+//     });
+//   } catch (e) {
+//     console.log(e.message);
+//     return main_helper.error_response(res, "error updating accounts");
+//   }
+// }
+
 async function manage_extensions(req, res) {
   try {
-    let { address, extensions } = req.body;
+    let { address, extensions, setup } = req.body;
 
     if (!address || !extensions) {
       return main_helper.error_response(
@@ -576,10 +743,75 @@ async function manage_extensions(req, res) {
     const updateObj = {};
 
     for (const [key, value] of Object.entries(extensions)) {
-      if (accountMain.active) {
-        updateObj[`extensions.${key}`] = value;
+      if (setup) {
+        if (key === "trade" && value === "true") {
+          const accountExtension = await accounts.findOne({
+            account_owner: address,
+            account_category: key,
+          });
+          if (!accountExtension) {
+            const newAddress = await generate_new_address();
+            const [] = await Promise.all([
+              accounts.create({
+                address: newAddress.toLowerCase(),
+                balance: 0,
+                account_category: key,
+                account_owner: address,
+                active: true,
+              }),
+            ]);
+            updateObj[`extensions.${key}`] = value;
+          } else {
+            updateObj[`extensions.${key}`] = value;
+          }
+        } else {
+          updateObj[`extensions.${key}`] = value;
+        }
+      } else if (accountMain.active) {
+        if (key === "loan" && value === "true") {
+          const accountExtension = await accounts.findOne({
+            account_owner: address,
+            account_category: key,
+          });
+          if (!accountExtension) {
+            const newAddress = await generate_new_address();
+            const [] = await Promise.all([
+              accounts.create({
+                address: newAddress.toLowerCase(),
+                balance: 0,
+                account_category: key,
+                account_owner: address,
+                active: true,
+              }),
+            ]);
+            updateObj[`extensions.${key}`] = value;
+            // if (accountMain.balance > 2) {
+            //   const newAddress = await generate_new_address();
+            //   const [] = await Promise.all([
+            //     // accountMain.updateOne({ $inc: { balance: 0 - 2 } }),
+            //     accounts.create({
+            //       address: newAddress.toLowerCase(),
+            //       balance: 0,
+            //       account_category: key,
+            //       account_owner: address,
+            //       active: true,
+            //     }),
+            //   ]);
+            //   updateObj[`extensions.${key}`] = value;
+            // } else {
+            //   return main_helper.error_response(
+            //     res,
+            //     main_helper.error_message("insufficient balance"),
+            //   );
+            // }
+          } else {
+            updateObj[`extensions.${key}`] = value;
+          }
+        } else {
+          updateObj[`extensions.${key}`] = value;
+        }
       } else if (!accountMain.active) {
-        if (["staking", "referral", "notify"].includes(key)) {
+        if (["staking", "notify"].includes(key)) {
           updateObj[`extensions.${key}`] = value;
         }
       }
@@ -675,6 +907,154 @@ async function get_account_balances(req, res) {
   }
 }
 
+async function update_current_rates() {
+  try {
+    const response = await axios.get(
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin&vs_currencies=usd",
+    );
+    const { bitcoin, ethereum } = response.data;
+
+    await rates.findOneAndUpdate(
+      {},
+      {
+        btc: { usd: bitcoin.usd },
+        eth: { usd: ethereum.usd },
+        usdc: { usd: response.data?.["usd-coin"]?.usd },
+        gold: { usd: 1961 },
+        platinum: { usd: 966 },
+      },
+    );
+  } catch (error) {
+    console.error("Error fetching rates:", error);
+  }
+}
+
+async function get_rates(req, res) {
+  try {
+    const ratesObj = await rates.findOne();
+    res.status(200).json(ratesObj);
+  } catch (e) {
+    console.log(e);
+    res.status(500).json("failed to get rates");
+  }
+}
+
+async function get_recepient_name(req, res) {
+  try {
+    let { address } = req.body;
+
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("address is required"),
+      );
+    }
+
+    if (address?.length < 42) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("address is not valid"),
+      );
+    }
+
+    address = address.toLowerCase();
+
+    const userAccount = await account_meta.findOne({ address });
+
+    if (!userAccount) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("No such account exists"),
+      );
+    }
+    return main_helper.success_response(res, {
+      message: "success",
+      name: hideName(userAccount?.name ?? ""),
+    });
+  } catch (e) {
+    console.log(e, "error getting recepient name");
+    res.status(500).json("failed to get recepient name");
+  }
+}
+
+function hideName(name) {
+  if (name?.length <= 2) {
+    return name;
+  }
+
+  const firstLetter = name?.charAt(0);
+  const lastLetter = name?.charAt(name?.length - 1);
+  const middleAsterisks = "*".repeat(name?.length - 2);
+
+  return firstLetter + middleAsterisks + lastLetter;
+}
+
+async function stakeCurrency(req, res) {
+  try {
+    const { address: addr, amount, currency, percentage = 0, duration } = req.body;
+
+    if (!addr || !amount || !currency) {
+      return main_helper.error_response(
+        res,
+        "address, amount, and currency are required",
+      );
+    }
+
+    const address = addr.toLowerCase();
+
+    const mainAccount = await accounts.findOne({
+      account_owner: address,
+      account_category: "main",
+    });
+
+    if (!mainAccount) {
+      return main_helper.error_response(res, "account not found");
+    }
+
+    if (mainAccount.assets[currency] < Number(amount)) {
+      return main_helper.error_response(res, "insufficient balance");
+    }
+
+    let expires;
+    if (duration === "360 D") {
+      expires = Date.now() + 360 * 24 * 60 * 60 * 1000;
+    }
+
+    const updateAccountPromise = accounts.findOneAndUpdate(
+      { account_owner: address, account_category: "main" },
+      {
+        $inc: {
+          [`assets.${currency}Staked`]: Number(amount),
+          [`assets.${currency}`]: -Number(amount),
+        },
+      },
+      { new: true },
+    );
+
+    const createStakePromise = currencyStakes.create({
+      address,
+      amount: Number(amount),
+      currency,
+      percentage,
+      expires,
+    });
+
+    const [updatedAccount, createdStake] = await Promise.all([
+      updateAccountPromise,
+      createStakePromise,
+    ]);
+
+    if (!createdStake) {
+      return main_helper.error_response(res, "error staking currency");
+    }
+
+    return main_helper.success_response(res, updatedAccount);
+  } catch (e) {
+    console.log(e, "error staking currency");
+    return main_helper.error_response(res, "error staking currency");
+  }
+}
+
 module.exports = {
   index,
   login_account,
@@ -689,4 +1069,8 @@ module.exports = {
   get_account_balances,
   handle_step,
   // open_utility_accounts,
+  update_current_rates,
+  get_rates,
+  get_recepient_name,
+  stakeCurrency,
 };
