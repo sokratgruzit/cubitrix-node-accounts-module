@@ -131,6 +131,7 @@ async function update_meta(req, res) {
     let account_meta_exists = await account_meta.findOne({
       address,
     });
+
     if (account_meta_exists) {
       // Regardless of previous email status, update the account.
       const updated = await account_meta_exists.updateOne({
@@ -212,7 +213,7 @@ async function save_account_meta(
   mobile,
   date_of_birth,
   nationality,
-  avatar,
+  avatar
 ) {
   try {
     let data = {
@@ -222,8 +223,13 @@ async function save_account_meta(
       date_of_birth: new Date(date_of_birth),
       nationality: nationality,
       avatar: avatar,
+      verified_at: new Date(),
+      verified: false,
+      verification_code: ''
     };
+
     let save_user = await account_meta.create(data);
+
     if (save_user) {
       return main_helper.success_message("User meta saved");
     }
