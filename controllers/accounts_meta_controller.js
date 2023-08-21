@@ -142,6 +142,9 @@ async function update_meta(req, res) {
         date_of_birth,
         nationality,
         avatar,
+        verified_at: null,
+        verified: false,
+        verification_code: ''
       });
 
       if (updated.acknowledged) {
