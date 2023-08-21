@@ -40,8 +40,8 @@ router.post("/otp/validate", google_2fa_controller.validate_OTP);
 router.post("/otp/disable", google_2fa_controller.disable_OTP);
 
 router.get("/test", (req, res) => {
-  console.log(123);
-  res.status(200).send("hi Jinx");
+  console.log("hello api");
+  res.status(200).send("hello api");
 });
 
 router.post("/create_different_accounts", account_controller.create_different_accounts);
