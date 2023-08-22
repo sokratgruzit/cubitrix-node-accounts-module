@@ -85,6 +85,7 @@ async function login_with_email(req, res) {
 }
 
 // logic of logging in
+const processingAccounts = {};
 async function login_account(req, res) {
   try {
     let { address } = req.body;
@@ -97,28 +98,36 @@ async function login_account(req, res) {
     }
     address = address.toLowerCase();
 
+    if (processingAccounts[address]) {
+      return main_helper.error_response(res, "Account processing, try again later");
+    }
+    processingAccounts[address] = true;
+
     let account_exists = await accounts.findOne({
       address: address,
       account_category: "external",
     });
 
     if (account_exists) {
+      delete processingAccounts[address];
       return main_helper.success_response(res, "account already exists");
     }
 
     let createdAcc = await accounts.create({
-      address: address.toLowerCase(),
+      address: address,
       account_category: "external",
       account_owner: "",
       active: true,
     });
 
     if (createdAcc) {
-      const newAddressMain = await generate_new_address();
-      const newAddressSystem = await generate_new_address();
+      const [newAddressMain, newAddressSystem] = await Promise.all([
+        generate_new_address(),
+        generate_new_address(),
+      ]);
 
       await Promise.all([
-        await accounts.create({
+        accounts.create({
           address: newAddressMain.toLowerCase(),
           balance: 0,
           account_category: "main",
@@ -126,7 +135,7 @@ async function login_account(req, res) {
           active: false,
           step: 2,
         }),
-        await accounts.create({
+        accounts.create({
           address: newAddressSystem.toLowerCase(),
           account_category: "system",
           account_owner: address,
@@ -136,8 +145,10 @@ async function login_account(req, res) {
       ]);
     }
 
+    delete processingAccounts[address]; // Release lock
     return main_helper.success_response(res, "success");
   } catch (e) {
+    delete processingAccounts[address]; // Release lock in case of error
     return main_helper.error_response(res, main_helper.error_message(e?.message));
   }
 }
@@ -337,7 +348,7 @@ async function update_auth_account_password(req, res) {
           if (!pass_match) return main_helper.error_response(res, "incorrect password");
         }
 
-        await user.updateOne({ password: newPassword });
+        await user.findOneupdateOne({ password: newPassword });
         return main_helper.success_response(res, "password updated");
       });
     } else {
