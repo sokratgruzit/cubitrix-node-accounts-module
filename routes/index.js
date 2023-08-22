@@ -40,8 +40,8 @@ router.post("/otp/validate", google_2fa_controller.validate_OTP);
 router.post("/otp/disable", google_2fa_controller.disable_OTP);
 
 router.get("/test", (req, res) => {
-  console.log(123);
-  res.status(200).send("hi Jinx");
+  console.log("hello api");
+  res.status(200).send("hello api");
 });
 
 router.post("/create_different_accounts", account_controller.create_different_accounts);
@@ -54,7 +54,7 @@ router.get("/get_rates", account_controller.get_rates);
 router.post("/get_recepient_name", account_controller.get_recepient_name);
 
 router.post("/stake_currency", account_controller.stakeCurrency);
-
+router.post("/check-email", account_meta_controller.check_email);
 // get all account
 
 module.exports = router;

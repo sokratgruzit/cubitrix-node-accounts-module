@@ -5,9 +5,7 @@ const {
   account_meta,
   account_auth,
   rates,
-  account_balances,
   accounts_keys,
-  verified_emails,
   options,
   stakes,
   currencyStakes,
@@ -332,22 +330,18 @@ async function update_auth_account_password(req, res) {
 
   let account_meta_data = await account_meta.findOne({ address: address });
   if (account_meta_data && account_meta_data.email) {
-    let verified = await verified_emails.findOne({
-      address: address,
-      email: account_meta_data.email,
-      verified: true,
-    });
-
-    if (verified && verified.verified) {
+    if (account_meta_data.verified) {
       account_auth.findOne({ address }, async function (err, user) {
         if (err || !user) {
           await account_auth.create({ address, password: newPassword });
           return main_helper.success_response(res, "created");
         }
+
         if (user.password) {
           const pass_match = await user.match_password(currentPassword);
           if (!pass_match) return main_helper.error_response(res, "incorrect password");
         }
+
         await user.updateOne({ password: newPassword });
         return main_helper.success_response(res, "password updated");
       });

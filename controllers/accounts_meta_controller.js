@@ -1,4 +1,4 @@
-const { account_meta, verified_emails, account_auth } = require("@cubitrix/models");
+const { account_meta, account_auth } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
 require("dotenv").config();
@@ -131,6 +131,7 @@ async function update_meta(req, res) {
     let account_meta_exists = await account_meta.findOne({
       address,
     });
+
     if (account_meta_exists) {
       // Regardless of previous email status, update the account.
       const updated = await account_meta_exists.updateOne({
@@ -141,6 +142,9 @@ async function update_meta(req, res) {
         date_of_birth,
         nationality,
         avatar,
+        verified_at: null,
+        verified: false,
+        verification_code: ''
       });
 
       if (updated.acknowledged) {
@@ -172,9 +176,10 @@ async function update_meta(req, res) {
 async function verify(req, res) {
   try {
     let { code } = req.body;
-    let verification = await verified_emails.findOne({
+    let verification = await account_meta.findOne({
       verification_code: code,
     });
+
     if (verification) {
       await Promise.allSettled([
         verification.updateOne({
@@ -186,11 +191,6 @@ async function verify(req, res) {
           { email: verification.email },
         ),
       ]);
-
-      await verified_emails.deleteMany({
-        email: verification.email,
-        verified: false,
-      });
 
       return main_helper.success_response(res, {
         success: true,
@@ -213,6 +213,7 @@ async function save_account_meta(
   date_of_birth,
   nationality,
   avatar,
+  email
 ) {
   try {
     let data = {
@@ -222,8 +223,14 @@ async function save_account_meta(
       date_of_birth: new Date(date_of_birth),
       nationality: nationality,
       avatar: avatar,
+      email: email,
+      verified_at: null,
+      verified: false,
+      verification_code: ''
     };
+
     let save_user = await account_meta.create(data);
+
     if (save_user) {
       return main_helper.success_message("User meta saved");
     }
@@ -239,7 +246,7 @@ async function resend_email(req, res) {
 
   try {
     const code = await account_helper.generate_verification_code();
-    const verify_email = await verified_emails.findOne({
+    const verify_email = await account_meta.findOne({
       address: address.toLowerCase(),
     });
 
@@ -262,6 +269,29 @@ async function resend_email(req, res) {
   } catch (e) {
     console.log(e);
     return main_helper.error_response(res, "email resend failed");
+  }
+}
+
+async function check_email(req, res) {
+  let { email } = req.body;
+
+  try {
+    const emailExists = await account_meta.findOne({ email });
+    
+    if (emailExists) {
+      return main_helper.success_response(res, {
+        msg: "This email already taken",
+        status: false
+      });
+    } else {
+      return main_helper.success_response(res, {
+        msg: "This email is available",
+        status: true
+      });
+    }
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_response(res, "Something went wrong");
   }
 }
 
@@ -315,4 +345,5 @@ module.exports = {
   resend_email,
   get_reset_password_email,
   reset_password,
+  check_email
 };
