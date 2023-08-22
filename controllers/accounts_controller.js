@@ -342,7 +342,7 @@ async function update_auth_account_password(req, res) {
           if (!pass_match) return main_helper.error_response(res, "incorrect password");
         }
 
-        await user.updateOne({ password: newPassword });
+        await user.findOneupdateOne({ password: newPassword });
         return main_helper.success_response(res, "password updated");
       });
     } else {
