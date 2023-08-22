@@ -42,17 +42,21 @@ function index(name) {
 // login with email for account recovery
 async function login_with_email(req, res) {
   let { email, password } = req.body;
+
   const account = await account_meta.findOne({ email });
+  const found = await account_auth.findOne({ address: account.address });
+  
   if (!account) {
     return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
-  const found = await account_auth.findOne({ address: account.address });
   if (!found) {
     return main_helper.error_response(res, "account not found");
   }
+
   if (found.password) {
     const pass_match = await found.match_password(password);
+
     if (!pass_match) return main_helper.error_response(res, "incorrect password");
 
     if (found.otp_enabled)
@@ -64,11 +68,13 @@ async function login_with_email(req, res) {
     const token = jwt.sign({ address: account.address, email: email }, "jwt_secret", {
       expiresIn: "24h",
     });
+
     res.cookie("Access-Token", token, {
       sameSite: "none",
       httpOnly: true,
       secure: true,
     });
+
     return main_helper.success_response(res, {
       message: "access granted",
       address: account.address,
