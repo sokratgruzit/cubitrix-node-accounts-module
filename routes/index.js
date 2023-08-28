@@ -13,12 +13,16 @@ const is_authenticated = require("../middleware/is_authenticated");
 const cookieParser = require("cookie-parser");
 
 router.use(cookieParser());
-router.use(is_authenticated);
 
 router.post("/login", account_controller.login_account);
-router.post("/update_profile", account_meta_controller.update_meta);
-router.post("/verify", account_meta_controller.verify);
+router.get("/refresh", account_controller.refresh_token);
 router.post("/recovery/login", account_controller.login_with_email);
+router.post("/update_profile_auth", account_controller.update_auth_account_password);
+router.post("/update_profile", account_meta_controller.update_meta);
+
+router.use(is_authenticated);
+
+router.post("/verify", account_meta_controller.verify);
 router.post("/resend-email", account_meta_controller.resend_email);
 router.post(
   "/get-reset-password-email",
@@ -30,8 +34,6 @@ router.post("/handle-step", account_controller.handle_step);
 
 router.post("/get_account", account_controller.get_account);
 router.post("/get_account_by_type", account_controller.get_account_by_type);
-
-router.post("/update_profile_auth", account_controller.update_auth_account_password);
 
 // google 2 factore auth routes
 router.post("/otp/generate", google_2fa_controller.generate_OTP);

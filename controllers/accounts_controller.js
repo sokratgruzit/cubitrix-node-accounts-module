@@ -1,5 +1,6 @@
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
+const generate_token = require("../helpers/generate_token");
 const {
   accounts,
   account_meta,
@@ -39,6 +40,37 @@ function index(name) {
   return name;
 }
 
+const refresh_token = async (req, res) => {
+  const cookies = req.cookies;
+
+  if (!cookies?.jwt) return res.status(401).json({ "message": "Unauthorized" });
+  
+  const refresh_token = cookies.jwt;
+ 
+  const auth = await account_auth.find({ access_token });
+
+  jwt.verify(
+    refresh_token,
+    process.env.REFRESH_TOKEN_SECRET,
+    async (err, decoded) => {
+      if (err || auth[0]?.address !== decoded.address) {
+        return res.status(403).json({ "message": "Forbidden" });
+      }
+
+      const access_token = generate_token(
+        {
+          address: decoded.address, 
+          email: decoded.email
+        },
+        "access_token", 
+        "30d"
+      );
+      
+      res.json({ access_token });
+    }
+  )
+};
+
 // login with email for account recovery
 async function login_with_email(req, res) {
   let { email, password } = req.body;
@@ -59,21 +91,41 @@ async function login_with_email(req, res) {
 
     if (!pass_match) return main_helper.error_response(res, "incorrect password");
 
-    if (found.otp_enabled)
-      return main_helper.success_response(res, {
-        message: "proceed 2fa",
-        address: account.address,
-      });
+    const access_token = generate_token(
+      account.address,
+      email,
+      "30d",
+      "access_token"
+    );
 
-    const token = jwt.sign({ address: account.address, email: email }, "jwt_secret", {
-      expiresIn: "24h",
-    });
+    // const refresh_token = generate_token(
+    //   account.address,
+    //   email,
+    //   "30d",
+    //   "refresh_token"
+    // );
 
-    res.cookie("Access-Token", token, {
+    await account_auth.updateOne(
+      { address: account.address },
+      {
+        $set: {
+          access_token: access_token,
+        },
+      }
+    );
+
+    res.cookie("Access-Token", access_token, {
       sameSite: "none",
       httpOnly: true,
       secure: true,
     });
+
+    if (found.otp_enabled) {
+      return main_helper.success_response(res, {
+        message: "proceed 2fa",
+        address: account.address,
+      });
+    }
 
     return main_helper.success_response(res, {
       message: "access granted",
@@ -1084,4 +1136,5 @@ module.exports = {
   get_rates,
   get_recepient_name,
   stakeCurrency,
+  refresh_token
 };
