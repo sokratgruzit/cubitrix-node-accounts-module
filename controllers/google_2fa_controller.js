@@ -1,4 +1,4 @@
-const { account_auth } = require("@cubitrix/models");
+const { account_auth, accounts } = require("@cubitrix/models");
 const main_helper = require("../helpers/index");
 const speakeasy = require("speakeasy");
 const jwt = require("jsonwebtoken");
@@ -106,14 +106,32 @@ const validate_OTP = async (req, res) => {
   }
 
   if (valid_token) {
-    const token = jwt.sign({ address: account.address }, "jwt_secret", {
-      expiresIn: "24h",
+    const accessToken = jwt.sign({ address: account.address }, process.env.JWT_SECRET, {
+      expiresIn: "15m",
     });
-    res.cookie("Access-Token", token, {
+
+    const refreshToken = jwt.sign({ address: account.address }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
+
+    await accounts.findOneAndUpdate(
+      { account_owner: account.address, account_category: "main" },
+      { $push: { refresh_token_sessions: refreshToken } },
+      { new: true },
+    );
+
+    res.cookie("Access-Token", accessToken, {
       sameSite: "none",
       httpOnly: true,
       secure: true,
     });
+
+    res.cookie("Refresh-Token", refreshToken, {
+      sameSite: "none",
+      httpOnly: true,
+      secure: true,
+    });
+
     return main_helper.success_response(res, "access granted");
   }
 
