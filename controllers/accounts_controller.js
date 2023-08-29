@@ -173,7 +173,6 @@ async function login_account(req, res) {
     });
 
     if (createdAcc) {
-      const refresh_token = jwt.sign({ address: address }, process.env.JWT_SECRET);
       const [newAddressMain, newAddressSystem] = await Promise.all([
         generate_new_address(),
         generate_new_address(),
@@ -187,7 +186,6 @@ async function login_account(req, res) {
           account_owner: address,
           active: false,
           step: 2,
-          refresh_token,
         }),
         accounts.create({
           address: newAddressSystem.toLowerCase(),
