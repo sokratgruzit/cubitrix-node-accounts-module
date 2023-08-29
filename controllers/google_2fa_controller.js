@@ -4,9 +4,11 @@ const speakeasy = require("speakeasy");
 const jwt = require("jsonwebtoken");
 
 const generate_OTP = async (req, res) => {
-  let { address } = req.body;
+  let address = req.address;
 
-  address = address.toLowerCase();
+  if (!address) {
+    return main_helper.error_response(res, "you are not logged in");
+  }
 
   const { ascii, hex, base32, otpauth_url } = speakeasy.generateSecret({
     issuer: "complend.com",
@@ -36,9 +38,13 @@ const generate_OTP = async (req, res) => {
 };
 
 const verify_OTP = async (req, res) => {
-  let { address, token } = req.body;
+  let { token } = req.body;
 
-  address = address.toLowerCase();
+  let address = req.address;
+
+  if (!address) {
+    return main_helper.error_response(res, "you are not logged in");
+  }
 
   const account = await account_auth.findOne({ address });
 
@@ -76,9 +82,13 @@ const verify_OTP = async (req, res) => {
 };
 
 const validate_OTP = async (req, res) => {
-  let { address, token } = req.body;
+  let { token } = req.body;
 
-  address = address?.toLowerCase();
+  let address = req.address;
+
+  if (!address) {
+    return main_helper.error_response(res, "you are not logged in");
+  }
 
   const account = await account_auth.findOne({ address });
 
@@ -113,9 +123,11 @@ const validate_OTP = async (req, res) => {
 };
 
 const disable_OTP = async (req, res) => {
-  let { address } = req.body;
+  let address = req.address;
 
-  address = address.toLowerCase();
+  if (!address) {
+    return main_helper.error_response(res, "you are not logged in");
+  }
 
   const account = await account_auth.findOne({ address });
 

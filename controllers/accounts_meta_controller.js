@@ -113,20 +113,16 @@ require("dotenv").config();
 
 async function update_meta(req, res) {
   try {
-    let { address, name, email, mobile, date_of_birth, nationality, avatar } = req.body;
+    let { name, email, mobile, date_of_birth, nationality, avatar } = req.body;
 
-    if (!address && req.auth) {
-      address = req.auth.address;
-    }
+    let address = req.address;
 
-    if (address == undefined) {
+    if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields"),
+        main_helper.error_message("you are not logged in"),
       );
     }
-
-    address = address.toLowerCase();
 
     let account_meta_exists = await account_meta.findOne({
       address,
@@ -144,7 +140,7 @@ async function update_meta(req, res) {
         avatar,
         verified_at: null,
         verified: false,
-        verification_code: ''
+        verification_code: "",
       });
 
       if (updated.acknowledged) {
@@ -213,7 +209,7 @@ async function save_account_meta(
   date_of_birth,
   nationality,
   avatar,
-  email
+  email,
 ) {
   try {
     let data = {
@@ -226,7 +222,7 @@ async function save_account_meta(
       email: email,
       verified_at: null,
       verified: false,
-      verification_code: ''
+      verification_code: "",
     };
 
     let save_user = await account_meta.create(data);
@@ -241,10 +237,10 @@ async function save_account_meta(
 }
 
 async function resend_email(req, res) {
-  let { address } = req.body;
-  address = address?.toLowerCase();
-
   try {
+    let address = req.address;
+
+    if (!address) return main_helper.error_response(res, "you are not logged in");
     const code = await account_helper.generate_verification_code();
     const verify_email = await account_meta.findOne({
       address: address.toLowerCase(),
@@ -277,16 +273,16 @@ async function check_email(req, res) {
 
   try {
     const emailExists = await account_meta.findOne({ email });
-    
+
     if (emailExists) {
       return main_helper.success_response(res, {
         msg: "This email already taken",
-        status: false
+        status: false,
       });
     } else {
       return main_helper.success_response(res, {
         msg: "This email is available",
-        status: true
+        status: true,
       });
     }
   } catch (e) {
@@ -345,5 +341,5 @@ module.exports = {
   resend_email,
   get_reset_password_email,
   reset_password,
-  check_email
+  check_email,
 };

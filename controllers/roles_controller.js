@@ -4,7 +4,6 @@ const main_helper = require("../helpers/index");
 async function index(req, res) {
   try {
     let results = await role.find();
-    console.log(results);
     if (!results.length) {
       results = await role.insertMany([
         {
@@ -23,7 +22,7 @@ async function index(req, res) {
       main_helper.return_data({
         status: true,
         data: { accounts: results },
-      })
+      }),
     );
   } catch (e) {
     console.log(e);

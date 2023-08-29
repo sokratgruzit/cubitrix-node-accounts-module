@@ -8,19 +8,16 @@ const account_meta_controller = require("../controllers/accounts_meta_controller
 const google_2fa_controller = require("../controllers/google_2fa_controller");
 // const validation = require('../middleware/validation_middleware');
 
-const is_authenticated = require("../middleware/is_authenticated");
-
 const cookieParser = require("cookie-parser");
 
 router.use(cookieParser());
 
 router.post("/login", account_controller.login_account);
-router.get("/refresh", account_controller.refresh_token);
+router.post("/web3Connect", account_controller.web3Connect);
 router.post("/recovery/login", account_controller.login_with_email);
+router.post("/logout", account_controller.logout);
 router.post("/update_profile_auth", account_controller.update_auth_account_password);
 router.post("/update_profile", account_meta_controller.update_meta);
-
-router.use(is_authenticated);
 
 router.post("/verify", account_meta_controller.verify);
 router.post("/resend-email", account_meta_controller.resend_email);

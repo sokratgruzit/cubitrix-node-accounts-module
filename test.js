@@ -4,9 +4,14 @@ const router = require("./routes/index");
 require("dotenv").config();
 const cors = require("cors");
 const cors_options = require("./config/cors_options");
+const isAuthenticated = require("./middleware/IsAuthenticated");
+const cookieParser = require("cookie-parser");
 
 const app = express();
 app.use(express.json({ extended: true }));
+app.use(cookieParser());
+app.use(isAuthenticated);
+
 app.use(cors(cors_options));
 app.use("/api/accounts", router);
 
@@ -28,7 +33,6 @@ app.use("/api/accounts", router);
 //static path
 const root = require("path").join(__dirname, "front", "build");
 app.use(express.static(root));
-
 // app.get("*", function (req, res) {
 //    res.sendFile(
 //       'index.html', { root }

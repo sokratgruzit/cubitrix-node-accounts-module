@@ -1,6 +1,5 @@
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
-const generate_token = require("../helpers/generate_token");
 const {
   accounts,
   account_meta,
@@ -40,93 +39,52 @@ function index(name) {
   return name;
 }
 
-const refresh_token = async (req, res) => {
-  const cookies = req.cookies;
-
-  if (!cookies?.jwt) return res.status(401).json({ "message": "Unauthorized" });
-  
-  const refresh_token = cookies.jwt;
- 
-  const auth = await account_auth.find({ access_token });
-
-  jwt.verify(
-    refresh_token,
-    process.env.REFRESH_TOKEN_SECRET,
-    async (err, decoded) => {
-      if (err || auth[0]?.address !== decoded.address) {
-        return res.status(403).json({ "message": "Forbidden" });
-      }
-
-      const access_token = generate_token(
-        {
-          address: decoded.address, 
-          email: decoded.email
-        },
-        "access_token", 
-        "30d"
-      );
-      
-      res.json({ access_token });
-    }
-  )
-};
-
-// login with email for account recovery
 async function login_with_email(req, res) {
   let { email, password } = req.body;
-
   const account = await account_meta.findOne({ email });
-  const found = await account_auth.findOne({ address: account.address });
-  
   if (!account) {
     return main_helper.error_response(res, "Token is invalid or user doesn't exist");
   }
 
+  const found = await account_auth.findOne({ address: account.address });
   if (!found) {
     return main_helper.error_response(res, "account not found");
   }
-
   if (found.password) {
     const pass_match = await found.match_password(password);
-
     if (!pass_match) return main_helper.error_response(res, "incorrect password");
 
-    const access_token = generate_token(
-      account.address,
-      email,
-      "30d",
-      "access_token"
+    if (found.otp_enabled)
+      return main_helper.success_response(res, {
+        message: "proceed 2fa",
+        address: account.address,
+      });
+
+    const accessToken = jwt.sign({ address: account.address }, process.env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
+
+    const refreshToken = jwt.sign({ address: account.address }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
+
+    await accounts.findOneAndUpdate(
+      { account_owner: account.address, account_category: "main" },
+      { $push: { refresh_token_sessions: refreshToken } },
+      { new: true },
     );
 
-    // const refresh_token = generate_token(
-    //   account.address,
-    //   email,
-    //   "30d",
-    //   "refresh_token"
-    // );
-
-    await account_auth.updateOne(
-      { address: account.address },
-      {
-        $set: {
-          access_token: access_token,
-        },
-      }
-    );
-
-    res.cookie("Access-Token", access_token, {
+    res.cookie("Access-Token", accessToken, {
       sameSite: "none",
       httpOnly: true,
       secure: true,
     });
 
-    if (found.otp_enabled) {
-      return main_helper.success_response(res, {
-        message: "proceed 2fa",
-        address: account.address,
-      });
-    }
-
+    res.cookie("Refresh-Token", refreshToken, {
+      sameSite: "none",
+      httpOnly: true,
+      secure: true,
+    });
     return main_helper.success_response(res, {
       message: "access granted",
       address: account.address,
@@ -136,7 +94,50 @@ async function login_with_email(req, res) {
   main_helper.error_response(res, "no password found");
 }
 
-// logic of logging in
+async function web3Connect(req, res) {
+  console.log("here");
+  let { signature, address } = req.body;
+  if (!signature || !address) return main_helper.error_response(res, "missing fields");
+
+  address = address.toLowerCase();
+
+  let message = "I confirm that this is my address";
+
+  let recoveredAddress = web3.eth.accounts.recover(message, signature);
+
+  if (recoveredAddress.toLowerCase() === address) {
+    const accessToken = jwt.sign({ address: address }, process.env.JWT_SECRET, {
+      expiresIn: "15m",
+    });
+
+    const refreshToken = jwt.sign({ address: address }, process.env.JWT_SECRET, {
+      expiresIn: "30d",
+    });
+
+    await accounts.findOneAndUpdate(
+      { account_owner: address, account_category: "main" },
+      { $push: { refresh_token_sessions: refreshToken } },
+      { new: true },
+    );
+
+    res.cookie("Access-Token", accessToken, {
+      sameSite: "none",
+      httpOnly: true,
+      secure: true,
+    });
+
+    res.cookie("Refresh-Token", refreshToken, {
+      sameSite: "none",
+      httpOnly: true,
+      secure: true,
+    });
+
+    return res.status(200).send("Connected");
+  }
+
+  return res.status(401).send("Invalid signature");
+}
+
 const processingAccounts = {};
 async function login_account(req, res) {
   try {
@@ -173,6 +174,7 @@ async function login_account(req, res) {
     });
 
     if (createdAcc) {
+      const refresh_token = jwt.sign({ address: address }, process.env.JWT_SECRET);
       const [newAddressMain, newAddressSystem] = await Promise.all([
         generate_new_address(),
         generate_new_address(),
@@ -186,6 +188,7 @@ async function login_account(req, res) {
           account_owner: address,
           active: false,
           step: 2,
+          refresh_token,
         }),
         accounts.create({
           address: newAddressSystem.toLowerCase(),
@@ -197,25 +200,25 @@ async function login_account(req, res) {
       ]);
     }
 
-    delete processingAccounts[address]; // Release lock
+    delete processingAccounts[address];
     return main_helper.success_response(res, "success");
   } catch (e) {
-    delete processingAccounts[address]; // Release lock in case of error
+    delete processingAccounts[address];
     return main_helper.error_response(res, main_helper.error_message(e?.message));
   }
 }
 
 async function handle_step(req, res) {
   try {
-    let { address, step, active } = req.body;
+    let { step, active } = req.body;
+    let address = req.address;
 
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields"),
+        main_helper.error_message("You are not logged in"),
       );
     }
-    address = address.toLowerCase();
 
     const mainAccount = await accounts.findOne({
       account_owner: address,
@@ -248,15 +251,16 @@ async function handle_step(req, res) {
 // create different accounts like loan,
 async function create_different_accounts(req, res) {
   try {
-    let { address, type } = req.body;
+    let { type } = req.body;
 
-    if (address == undefined) {
+    let address = req.address;
+
+    if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields"),
+        main_helper.error_message("You are not logged in"),
       );
     }
-    address = address.toLowerCase();
 
     let option = await options.findOne({ key: "extension_options" });
 
@@ -378,13 +382,12 @@ async function generate_new_address() {
 }
 
 async function update_auth_account_password(req, res) {
-  let { currentPassword, newPassword, address } = req.body;
+  let { currentPassword, newPassword } = req.body;
+  let address = req.body;
 
-  if (!address && req.auth?.address) {
-    address = req.auth.address;
+  if (!address) {
+    return main_helper.error_response(res, "You are not logged in");
   }
-
-  address = address.toLowerCase();
 
   let account_meta_data = await account_meta.findOne({ address: address });
   if (account_meta_data && account_meta_data.email) {
@@ -413,13 +416,14 @@ async function update_auth_account_password(req, res) {
 
 async function get_account(req, res) {
   try {
-    let { address } = req.body;
+    let address = req.address;
 
-    if (!address && req.auth?.address) {
-      address = req.auth.address;
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("You are not logged in"),
+      );
     }
-
-    address = address.toLowerCase();
 
     let results = await accounts.aggregate([
       { $match: { account_owner: address, account_category: "main" } },
@@ -469,60 +473,16 @@ async function get_account(req, res) {
   }
 }
 
-async function activate_account_via_staking(req, res) {
-  try {
-    let { address } = req.body;
-
-    if (!address) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("missing some fields"),
-      );
-    }
-
-    address = address.toLowerCase();
-
-    const account = await accounts.findOne({ address: address });
-
-    if (!account) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("account not found"),
-      );
-    }
-
-    const updatedMainAccount = await accounts.findOneAndUpdate(
-      { account_owner: address, account_category: "main" },
-      { active: true },
-      { new: true },
-    );
-
-    if (!updatedMainAccount) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("account not found"),
-      );
-    }
-
-    return main_helper.success_response(res, "account activated");
-  } catch (e) {
-    console.log(e);
-    return main_helper.error_response(res, "error getting accounts");
-  }
-}
-
 async function activate_account(req, res) {
   try {
-    let { address } = req.body;
+    let address = req.address;
 
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields"),
+        main_helper.error_message("You are not logged in"),
       );
     }
-
-    address = address.toLowerCase();
 
     let newestAcc = await accounts.findOne({
       account_owner: address,
@@ -773,7 +733,8 @@ async function activate_account(req, res) {
 
 async function manage_extensions(req, res) {
   try {
-    let { address, extensions, setup } = req.body;
+    let { extensions, setup } = req.body;
+    let address = req.address;
 
     if (!address || !extensions) {
       return main_helper.error_response(
@@ -898,15 +859,18 @@ async function manage_extensions(req, res) {
 
 async function get_account_by_type(req, res) {
   try {
-    let { address, type } = req.body;
+    let { type } = req.body;
 
-    if (!address && req.auth?.address) {
-      address = req.auth.address;
+    let address = req.address;
+
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("You are not logged in"),
+      );
     }
 
-    address = address.toLowerCase();
-
-    if (!address || !type) {
+    if (!type) {
       return main_helper.error_response(
         res,
         main_helper.error_message("address and type is required"),
@@ -936,13 +900,15 @@ async function get_account_by_type(req, res) {
 
 async function get_account_balances(req, res) {
   try {
-    let { address } = req.body;
+    let address = req.address;
 
-    if (!address && req.auth?.address) {
-      address = req.auth.address;
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("You are not logged in"),
+      );
     }
 
-    address = address.toLowerCase();
     let accounts_data = await accounts.find(
       {
         $or: [{ account_owner: address }, { address: address }],
@@ -1004,12 +970,12 @@ async function get_rates(req, res) {
 
 async function get_recepient_name(req, res) {
   try {
-    let { address } = req.body;
+    let address = req.address;
 
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("address is required"),
+        main_helper.error_message("You are not logged in"),
       );
     }
 
@@ -1054,13 +1020,15 @@ function hideName(name) {
 
 async function stakeCurrency(req, res) {
   try {
-    const { address: addr, amount, currency, percentage = 0, duration } = req.body;
+    let addr = req.address;
+    const { amount, currency, percentage = 0, duration } = req.body;
 
-    if (!addr || !amount || !currency) {
-      return main_helper.error_response(
-        res,
-        "address, amount, and currency are required",
-      );
+    if (!addr) {
+      return main_helper.error_response(res, "You are not logged in");
+    }
+
+    if (!amount || !currency) {
+      return main_helper.error_response(res, "amount, and currency are required");
     }
 
     const address = addr.toLowerCase();
@@ -1118,15 +1086,42 @@ async function stakeCurrency(req, res) {
   }
 }
 
+async function logout(req, res) {
+  try {
+    let address = req.address;
+    if (!address) return main_helper.error_response(res, "You are not logged in");
+
+    // Clear cookies
+    res.clearCookie("Access-Token");
+    res.clearCookie("Refresh-Token");
+
+    const refreshToken = req.cookies["Refresh-Token"];
+    if (refreshToken) {
+      await accounts.findOneAndUpdate(
+        {
+          account_owner: address,
+          account_category: "main",
+        },
+        { $pull: { refresh_token_sessions: refreshToken } },
+      );
+    }
+
+    return res.status(200).send("Logged out successfully");
+  } catch (e) {
+    console.error(e);
+    return main_helper.error_response(res, "error logging out");
+  }
+}
+
 module.exports = {
   index,
   login_account,
+  logout,
   login_with_email,
   get_account,
   get_account_by_type,
   update_auth_account_password,
   create_different_accounts,
-  activate_account_via_staking,
   activate_account,
   manage_extensions,
   get_account_balances,
@@ -1136,5 +1131,5 @@ module.exports = {
   get_rates,
   get_recepient_name,
   stakeCurrency,
-  refresh_token
+  web3Connect,
 };
