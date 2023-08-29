@@ -95,7 +95,6 @@ async function login_with_email(req, res) {
 }
 
 async function web3Connect(req, res) {
-  console.log("here");
   let { signature, address } = req.body;
   if (!signature || !address) return main_helper.error_response(res, "missing fields");
 

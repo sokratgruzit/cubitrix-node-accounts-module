@@ -82,12 +82,10 @@ const verify_OTP = async (req, res) => {
 };
 
 const validate_OTP = async (req, res) => {
-  let { token } = req.body;
-
-  let address = req.address;
+  let { address, token } = req.body;
 
   if (!address) {
-    return main_helper.error_response(res, "you are not logged in");
+    return main_helper.error_response(res, "no address");
   }
 
   const account = await account_auth.findOne({ address });
