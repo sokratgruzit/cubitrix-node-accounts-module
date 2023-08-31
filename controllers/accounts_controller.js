@@ -60,13 +60,26 @@ async function login_with_email(req, res) {
         address: account.address,
       });
 
-    const accessToken = jwt.sign({ address: account.address }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
+    const mainAcc = await accounts.findOne({
+      account_owner: account.address,
+      account_category: "main",
     });
 
-    const refreshToken = jwt.sign({ address: account.address }, process.env.JWT_SECRET, {
-      expiresIn: "30d",
-    });
+    const accessToken = jwt.sign(
+      { address: account.address, mainAddress: mainAcc?.address },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "15m",
+      },
+    );
+
+    const refreshToken = jwt.sign(
+      { address: account.address, mainAddress: mainAcc?.address },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "30d",
+      },
+    );
 
     await accounts.findOneAndUpdate(
       { account_owner: account.address, account_category: "main" },
@@ -105,14 +118,25 @@ async function web3Connect(req, res) {
   let recoveredAddress = web3.eth.accounts.recover(message, signature);
 
   if (recoveredAddress.toLowerCase() === address) {
-    const accessToken = jwt.sign({ address: address }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
+    const mainAcc = await accounts.findOne({
+      account_owner: address,
+      account_category: "main",
     });
+    const accessToken = jwt.sign(
+      { address: address, mainAddress: mainAcc.address },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "15m",
+      },
+    );
 
-    const refreshToken = jwt.sign({ address: address }, process.env.JWT_SECRET, {
-      expiresIn: "30d",
-    });
-
+    const refreshToken = jwt.sign(
+      { address: address, mainAddress: mainAcc.address },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "30d",
+      },
+    );
     await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
       { $push: { refresh_token_sessions: refreshToken } },
@@ -408,65 +432,6 @@ async function update_auth_account_password(req, res) {
     }
   } else {
     return main_helper.error_response(res, "please verify email");
-  }
-}
-
-async function get_account(req, res) {
-  try {
-    let address = req.address;
-
-    if (!address) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("You are not logged in"),
-      );
-    }
-
-    let results = await accounts.aggregate([
-      { $match: { account_owner: address, account_category: "main" } },
-      {
-        $lookup: {
-          from: "account_metas",
-          localField: "account_owner",
-          foreignField: "address",
-          as: "meta",
-        },
-      },
-      {
-        $unwind: "$meta",
-      },
-      {
-        $addFields: {
-          meta_id_objectId: { $toObjectId: "$meta._id" },
-        },
-      },
-      {
-        $lookup: {
-          from: "referral_uni_users",
-          localField: "meta_id_objectId",
-          foreignField: "user_id",
-          as: "referral",
-        },
-      },
-    ]);
-
-    const auth_acc = await account_auth.findOne({ address: address });
-    if (results[0]) {
-      results[0].hasPasswordSet = auth_acc?.password ? true : false;
-      results[0].otp_enabled = auth_acc?.otp_enabled;
-      results[0].otp_verified = auth_acc?.otp_verified;
-      results[0].stakedTotal = results[0].stakedTotal || 0; // Check if stakedTotal exists, otherwise set it to 0
-    }
-
-    res.status(200).json(
-      main_helper.return_data({
-        status: true,
-        data: { accounts: results },
-      }),
-    );
-  } catch (e) {
-    console.log(e);
-    return main_helper.error_response(res, "error getting accounts");
   }
 }
 
@@ -895,7 +860,7 @@ async function get_account_by_type(req, res) {
   }
 }
 
-async function get_account_balances(req, res) {
+async function get_account(req, res) {
   try {
     let address = req.address;
 
@@ -906,30 +871,64 @@ async function get_account_balances(req, res) {
       );
     }
 
-    let accounts_data = await accounts.find(
+    const aggregatedQuery = accounts.aggregate([
+      { $match: { account_owner: address, account_category: "main" } },
+      {
+        $lookup: {
+          from: "account_metas",
+          localField: "account_owner",
+          foreignField: "address",
+          as: "meta",
+        },
+      },
+      { $unwind: "$meta" },
+      {
+        $addFields: {
+          meta_id_objectId: { $toObjectId: "$meta._id" },
+        },
+      },
+      {
+        $lookup: {
+          from: "referral_uni_users",
+          localField: "meta_id_objectId",
+          foreignField: "user_id",
+          as: "referral",
+        },
+      },
+    ]);
+
+    const accounts_dataQuery = accounts.find(
       {
         $or: [{ account_owner: address }, { address: address }],
       },
       { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 },
     );
-    return res.status(200).json({
-      success: true,
-      data: accounts_data,
-    });
 
-    // if (!account) {
-    //   return main_helper.error_response(
-    //     res,
-    //     main_helper.error_message("account not found")
-    //   );
-    // }
-    // res.status(200).json({
-    //   success: true,
-    //   data: account,
-    // });
+    const auth_accQuery = account_auth.findOne({ address: address });
+
+    const [aggregatedResults, accounts_data, auth_acc] = await Promise.all([
+      aggregatedQuery,
+      accounts_dataQuery,
+      auth_accQuery,
+    ]);
+
+    if (aggregatedResults[0]) {
+      aggregatedResults[0].hasPasswordSet = auth_acc?.password ? true : false;
+      aggregatedResults[0].otp_enabled = auth_acc?.otp_enabled;
+      aggregatedResults[0].otp_verified = auth_acc?.otp_verified;
+      aggregatedResults[0].stakedTotal = aggregatedResults[0].stakedTotal || 0;
+    }
+
+    return res.status(200).json({
+      status: true,
+      data: {
+        accounts: aggregatedResults,
+        accountBalances: accounts_data,
+      },
+    });
   } catch (e) {
-    console.log(e, "get account balances");
-    return main_helper.error_response(res, "error getting account");
+    console.log(e);
+    return main_helper.error_response(res, "error getting accounts");
   }
 }
 
@@ -1121,7 +1120,6 @@ module.exports = {
   create_different_accounts,
   activate_account,
   manage_extensions,
-  get_account_balances,
   handle_step,
   // open_utility_accounts,
   update_current_rates,

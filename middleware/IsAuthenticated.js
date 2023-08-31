@@ -6,6 +6,7 @@ function isAuthenticated(req, res, next) {
     try {
       const decoded = jwt.verify(accessToken, "JWT_SECRET");
       req.address = decoded.address;
+      req.mainAddress = decoded.mainAddress;
     } catch (e) {
       refresh(req, res);
     }
