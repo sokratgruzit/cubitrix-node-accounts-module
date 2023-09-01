@@ -122,6 +122,7 @@ async function web3Connect(req, res) {
       account_owner: address,
       account_category: "main",
     });
+
     const accessToken = jwt.sign(
       { address: address, mainAddress: mainAcc.address },
       process.env.JWT_SECRET,
@@ -404,13 +405,13 @@ async function generate_new_address() {
 
 async function update_auth_account_password(req, res) {
   let { currentPassword, newPassword } = req.body;
-  let address = req.body;
+  let address = req.address;
 
   if (!address) {
     return main_helper.error_response(res, "You are not logged in");
   }
 
-  let account_meta_data = await account_meta.findOne({ address: address });
+  let account_meta_data = await account_meta.findOne({ address });
   if (account_meta_data && account_meta_data.email) {
     if (account_meta_data.verified) {
       account_auth.findOne({ address }, async function (err, user) {
