@@ -18,26 +18,20 @@ async function generate_verification_code() {
 // check_email_on_company
 async function check_email_on_company(email) {
   try {
-    // List of known company email domains
-    const companyDomains = ["company1.com", "company2.com", "examplecorp.com"];
+    const companyDomains = ["gmail.com", "company2.com", "examplecorp.com"];
 
-    // Split the email address into username and domain
     const parts = email.split("@");
 
-    // Check if the email has the correct format
     if (parts.length !== 2) {
       return false;
     }
 
-    // Extract the domain part
     const domain = parts[1];
 
-    // Check if the domain is in the list of company domains
     if (companyDomains.includes(domain)) {
       return true;
     }
 
-    // If the domain is not in the list, it's not a company email
     return false;
   } catch (e) {
     return false;
@@ -67,9 +61,7 @@ async function check_and_send_verification_email(address, email) {
   const verified_email_address = results[1].value;
   const verified_emails_all = results[2].value;
 
-  const email_already_verified = verified_emails_all.some(
-    (obj) => obj.verified === true
-  );
+  const email_already_verified = verified_emails_all.some((obj) => obj.verified === true);
 
   if (email_already_verified)
     return main_helper.error_message("email already exists & is verified");
@@ -83,10 +75,7 @@ async function check_and_send_verification_email(address, email) {
       address,
     });
 
-    let email_sent = await send_verification_mail(
-      email,
-      email_verification_code
-    );
+    let email_sent = await send_verification_mail(email, email_verification_code);
 
     if (email_sent.success) {
       return main_helper.success_message("email sent");
@@ -128,7 +117,7 @@ async function send_verification_mail(email, verification_code) {
     to: email,
     subject: "Verification Email",
     html: email_helper.verification_template(
-      process.env.FRONTEND_URL + "/verify/" + verification_code
+      process.env.FRONTEND_URL + "/verify/" + verification_code,
     ),
   };
 
@@ -160,7 +149,7 @@ async function send_reset_password_email(email, verification_code) {
     to: email,
     subject: "Reset Password",
     html: email_helper.reset_password_template(
-      process.env.FRONTEND_URL + "/reset-password/" + verification_code
+      process.env.FRONTEND_URL + "/reset-password/" + verification_code,
     ),
   };
 
