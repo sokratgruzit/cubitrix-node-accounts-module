@@ -115,12 +115,16 @@ async function update_meta(req, res) {
   try {
     let { name, email, mobile, date_of_birth, nationality, avatar } = req.body;
 
+    let check_email = await account_helper.check_email_on_company(email);
+    if (!check_email) {
+      return main_helper.error_response(res, "Email isnot correct");
+    }
     let address = req.address;
 
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("you are not logged in"),
+        main_helper.error_message("you are not logged in")
       );
     }
 
@@ -143,7 +147,7 @@ async function update_meta(req, res) {
           verified: false,
           verification_code: "",
         },
-        { new: true },
+        { new: true }
       );
       if (updated) {
         return main_helper.success_response(res, updated);
@@ -157,7 +161,7 @@ async function update_meta(req, res) {
         new Date(date_of_birth),
         nationality,
         avatar,
-        email, // Include email for a new account.
+        email // Include email for a new account.
       );
 
       if (account_saved.success) {
@@ -166,7 +170,10 @@ async function update_meta(req, res) {
       return main_helper.error_response(res, account_saved.message);
     }
   } catch (e) {
-    return main_helper.error_response(res, main_helper.error_message(e.message));
+    return main_helper.error_response(
+      res,
+      main_helper.error_message(e.message)
+    );
   }
 }
 
@@ -186,7 +193,7 @@ async function verify(req, res) {
         }),
         account_meta.findOneAndUpdate(
           { address: verification.address },
-          { email: verification.email },
+          { email: verification.email }
         ),
       ]);
 
@@ -211,7 +218,7 @@ async function save_account_meta(
   date_of_birth,
   nationality,
   avatar,
-  email,
+  email
 ) {
   try {
     let data = {
@@ -226,6 +233,10 @@ async function save_account_meta(
       verified: false,
       verification_code: "",
     };
+    let check_email = await account_helper.check_email_on_company(email);
+    if (!check_email) {
+      return main_helper.error_message("Email isnot correct");
+    }
 
     let save_user = await account_meta.create(data);
 
@@ -242,13 +253,21 @@ async function resend_email(req, res) {
   try {
     let address = req.address;
 
-    if (!address) return main_helper.error_response(res, "you are not logged in");
+    if (!address)
+      return main_helper.error_response(res, "you are not logged in");
     const code = await account_helper.generate_verification_code();
     const verify_email = await account_meta.findOne({
       address: address.toLowerCase(),
     });
 
-    if (!verify_email) return main_helper.error_response(res, "email resend failed");
+    let check_email = await account_helper.check_email_on_company(
+      verify_email.email
+    );
+    if (!check_email) {
+      return main_helper.error_response(res, "Email isnot correct");
+    }
+    if (!verify_email)
+      return main_helper.error_response(res, "email resend failed");
 
     await verify_email.updateOne({
       verified_at: null,
@@ -259,10 +278,11 @@ async function resend_email(req, res) {
 
     const email_sent = await account_helper.send_verification_mail(
       verify_email.email,
-      code,
+      code
     );
 
-    if (email_sent.success) return main_helper.success_response(res, "email sent");
+    if (email_sent.success)
+      return main_helper.success_response(res, "email sent");
     return main_helper.error.response(res, "email resend failed");
   } catch (e) {
     console.log(e);
@@ -274,6 +294,10 @@ async function check_email(req, res) {
   let { email } = req.body;
 
   try {
+    let check_email = await account_helper.check_email_on_company(email);
+    if (!check_email) {
+      return main_helper.error_response(res, "Email isnot correct");
+    }
     const emailExists = await account_meta.findOne({ email });
 
     if (emailExists) {
@@ -297,6 +321,12 @@ async function get_reset_password_email(req, res) {
   try {
     let { email } = req.body;
 
+    let check_email = await account_helper.check_email_on_company(email);
+
+    if (!check_email) {
+      return main_helper.error_response(res, "Email isnot correct");
+    }
+
     const meta = await account_meta.findOne({ email });
 
     if (!meta) return main_helper.error_response(res, "No such email found");
@@ -305,13 +335,19 @@ async function get_reset_password_email(req, res) {
 
     await account_auth.findOneAndUpdate(
       { address: meta.address },
-      { password_reset_code: code },
+      { password_reset_code: code }
     );
 
-    const response = await account_helper.send_reset_password_email(email, code);
+    const response = await account_helper.send_reset_password_email(
+      email,
+      code
+    );
 
     if (response.success)
-      return main_helper.success_response(res, "You will receive a reset email");
+      return main_helper.success_response(
+        res,
+        "You will receive a reset email"
+      );
 
     return main_helper.error_response(res, `Email couldn't be sent`);
   } catch (e) {
@@ -326,10 +362,11 @@ async function reset_password(req, res) {
     if (!code) return main_helper.error_response(res, "code required");
     const updated = await account_auth.findOneAndUpdate(
       { password_reset_code: code },
-      { password_reset_code: "", password: password },
+      { password_reset_code: "", password: password }
     );
 
-    if (!updated) return main_helper.error_response(res, "failed to update password");
+    if (!updated)
+      return main_helper.error_response(res, "failed to update password");
 
     return main_helper.success_response(res, "password updated");
   } catch (e) {

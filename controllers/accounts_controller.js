@@ -41,9 +41,16 @@ function index(name) {
 
 async function login_with_email(req, res) {
   let { email, password } = req.body;
+  let check_email = await account_helper.check_email_on_company(email);
+  if (!check_email) {
+    return main_helper.error_response(res, "Email isnot correct");
+  }
   const account = await account_meta.findOne({ email });
   if (!account) {
-    return main_helper.error_response(res, "Token is invalid or user doesn't exist");
+    return main_helper.error_response(
+      res,
+      "Token is invalid or user doesn't exist"
+    );
   }
 
   const found = await account_auth.findOne({ address: account.address });
@@ -52,7 +59,8 @@ async function login_with_email(req, res) {
   }
   if (found.password) {
     const pass_match = await found.match_password(password);
-    if (!pass_match) return main_helper.error_response(res, "incorrect password");
+    if (!pass_match)
+      return main_helper.error_response(res, "incorrect password");
 
     if (found.otp_enabled)
       return main_helper.success_response(res, {
@@ -70,7 +78,7 @@ async function login_with_email(req, res) {
       process.env.JWT_SECRET,
       {
         expiresIn: "15m",
-      },
+      }
     );
 
     const refreshToken = jwt.sign(
@@ -78,13 +86,13 @@ async function login_with_email(req, res) {
       process.env.JWT_SECRET,
       {
         expiresIn: "30d",
-      },
+      }
     );
 
     await accounts.findOneAndUpdate(
       { account_owner: account.address, account_category: "main" },
       { $push: { refresh_token_sessions: refreshToken } },
-      { new: true },
+      { new: true }
     );
 
     res.cookie("Access-Token", accessToken, {
@@ -109,7 +117,8 @@ async function login_with_email(req, res) {
 
 async function web3Connect(req, res) {
   let { signature, address } = req.body;
-  if (!signature || !address) return main_helper.error_response(res, "missing fields");
+  if (!signature || !address)
+    return main_helper.error_response(res, "missing fields");
 
   address = address.toLowerCase();
 
@@ -128,7 +137,7 @@ async function web3Connect(req, res) {
       process.env.JWT_SECRET,
       {
         expiresIn: "15m",
-      },
+      }
     );
 
     const refreshToken = jwt.sign(
@@ -136,12 +145,12 @@ async function web3Connect(req, res) {
       process.env.JWT_SECRET,
       {
         expiresIn: "30d",
-      },
+      }
     );
     await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
       { $push: { refresh_token_sessions: refreshToken } },
-      { new: true },
+      { new: true }
     );
 
     res.cookie("Access-Token", accessToken, {
@@ -170,13 +179,16 @@ async function login_account(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Fill all fields"),
+        main_helper.error_message("Fill all fields")
       );
     }
     address = address.toLowerCase();
 
     if (processingAccounts[address]) {
-      return main_helper.error_response(res, "Account processing, try again later");
+      return main_helper.error_response(
+        res,
+        "Account processing, try again later"
+      );
     }
     processingAccounts[address] = true;
 
@@ -226,7 +238,10 @@ async function login_account(req, res) {
     return main_helper.success_response(res, "success");
   } catch (e) {
     delete processingAccounts[address];
-    return main_helper.error_response(res, main_helper.error_message(e?.message));
+    return main_helper.error_response(
+      res,
+      main_helper.error_message(e?.message)
+    );
   }
 }
 
@@ -238,7 +253,7 @@ async function handle_step(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("You are not logged in"),
+        main_helper.error_message("You are not logged in")
       );
     }
 
@@ -250,14 +265,14 @@ async function handle_step(req, res) {
     if (!mainAccount) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found"),
+        main_helper.error_message("account not found")
       );
     }
 
     const updatedMainAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
       { step, active },
-      { new: true },
+      { new: true }
     );
 
     return main_helper.success_response(res, {
@@ -280,7 +295,7 @@ async function create_different_accounts(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("You are not logged in"),
+        main_helper.error_message("You are not logged in")
       );
     }
 
@@ -312,7 +327,7 @@ async function create_different_accounts(req, res) {
       });
     }
     let account_web3 = new web3_accounts(
-      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
+      "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"
     );
     let create_account = account_web3.create();
     let created_address = create_account.address;
@@ -332,7 +347,7 @@ async function create_different_accounts(req, res) {
     if (account_saved) {
       await accounts.findOneAndUpdate(
         { account_owner: address, account_category: "main" },
-        { $inc: { balance: -fee } },
+        { $inc: { balance: -fee } }
       );
     }
 
@@ -390,7 +405,7 @@ async function create_different_accounts(req, res) {
 
 async function generate_new_address() {
   let account_web3 = new web3_accounts(
-    "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985",
+    "https://mainnet.infura.io/v3/cbf4ab3d4878468f9bbb6ff7d761b985"
   );
   let create_account = account_web3.create();
   let created_address = create_account.address;
@@ -416,7 +431,10 @@ async function update_auth_account_password(req, res) {
     if (account_meta_data.verified) {
       const authAcc = await account_auth.findOne({ address });
       if (!authAcc) {
-        const createdAuth = await account_auth.create({ address, password: newPassword });
+        const createdAuth = await account_auth.create({
+          address,
+          password: newPassword,
+        });
 
         let infoObj = {};
 
@@ -429,13 +447,14 @@ async function update_auth_account_password(req, res) {
 
       if (authAcc.password) {
         const pass_match = await authAcc.match_password(currentPassword);
-        if (!pass_match) return main_helper.error_response(res, "incorrect password");
+        if (!pass_match)
+          return main_helper.error_response(res, "incorrect password");
       }
 
       const updatedAuth = await account_auth.findOneAndUpdate(
         { address },
         { password: newPassword },
-        { new: true },
+        { new: true }
       );
 
       let infoObj = {};
@@ -460,7 +479,7 @@ async function activate_account(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("You are not logged in"),
+        main_helper.error_message("You are not logged in")
       );
     }
 
@@ -472,7 +491,7 @@ async function activate_account(req, res) {
     if (!newestAcc) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found"),
+        main_helper.error_message("account not found")
       );
     }
 
@@ -487,13 +506,17 @@ async function activate_account(req, res) {
     let loopCount = userStakes.length - 1;
 
     let todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
-    let monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
+    let monthWithWiggle =
+      Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
 
     let incrementMonthly = 0;
     let incrementDaily = 0;
 
     if (mutexes[address]) {
-      return main_helper.error_response(res, "account is currently being updated");
+      return main_helper.error_response(
+        res,
+        "account is currently being updated"
+      );
     }
 
     const mutex = mutexes[address] || new Mutex();
@@ -502,7 +525,9 @@ async function activate_account(req, res) {
 
     while (condition) {
       loopCount++;
-      const result = await tokenContract.methods.stakersRecord(address, loopCount).call();
+      const result = await tokenContract.methods
+        .stakersRecord(address, loopCount)
+        .call();
       if (result.staketime == 0) {
         condition = false;
         break;
@@ -576,13 +601,13 @@ async function activate_account(req, res) {
               },
               tier: updateObj,
             },
-            { new: true },
+            { new: true }
           ),
           create_deposit_transaction(
             address,
             result.amount / 10 ** 18,
             "ether",
-            "deposit",
+            "deposit"
           ),
           accounts.findOneAndUpdate(
             {
@@ -593,7 +618,7 @@ async function activate_account(req, res) {
               $inc: {
                 balance: result.amount / 10 ** 18,
               },
-            },
+            }
           ),
         ]);
 
@@ -719,7 +744,7 @@ async function manage_extensions(req, res) {
     if (!address || !extensions) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("missing some fields"),
+        main_helper.error_message("missing some fields")
       );
     }
 
@@ -733,14 +758,14 @@ async function manage_extensions(req, res) {
     if (!accountMain) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found"),
+        main_helper.error_message("account not found")
       );
     }
 
     if (!accountMeta.email) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not verified"),
+        main_helper.error_message("account not verified")
       );
     }
 
@@ -824,7 +849,7 @@ async function manage_extensions(req, res) {
     const updatedAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
       { $set: updateObj },
-      { new: true },
+      { new: true }
     );
 
     return main_helper.success_response(res, {
@@ -846,14 +871,14 @@ async function get_account_by_type(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("You are not logged in"),
+        main_helper.error_message("You are not logged in")
       );
     }
 
     if (!type) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("address and type is required"),
+        main_helper.error_message("address and type is required")
       );
     }
 
@@ -865,7 +890,7 @@ async function get_account_by_type(req, res) {
     if (!account) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found"),
+        main_helper.error_message("account not found")
       );
     }
     res.status(200).json({
@@ -885,7 +910,7 @@ async function get_account(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("You are not logged in"),
+        main_helper.error_message("You are not logged in")
       );
     }
 
@@ -919,7 +944,7 @@ async function get_account(req, res) {
       {
         $or: [{ account_owner: address }, { address: address }],
       },
-      { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 },
+      { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 }
     );
 
     const auth_accQuery = account_auth.findOne({ address: address });
@@ -953,7 +978,7 @@ async function get_account(req, res) {
 async function update_current_rates() {
   try {
     const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin&vs_currencies=usd",
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin&vs_currencies=usd"
     );
     const { bitcoin, ethereum } = response.data;
 
@@ -965,7 +990,7 @@ async function update_current_rates() {
         usdc: { usd: response.data?.["usd-coin"]?.usd },
         gold: { usd: 1961 },
         platinum: { usd: 966 },
-      },
+      }
     );
   } catch (error) {
     console.error("Error fetching rates:", error);
@@ -989,14 +1014,14 @@ async function get_recepient_name(req, res) {
     if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("You are not logged in"),
+        main_helper.error_message("You are not logged in")
       );
     }
 
     if (address?.length < 42) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("address is not valid"),
+        main_helper.error_message("address is not valid")
       );
     }
 
@@ -1007,7 +1032,7 @@ async function get_recepient_name(req, res) {
     if (!userAccount) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("No such account exists"),
+        main_helper.error_message("No such account exists")
       );
     }
     return main_helper.success_response(res, {
@@ -1042,7 +1067,10 @@ async function stakeCurrency(req, res) {
     }
 
     if (!amount || !currency) {
-      return main_helper.error_response(res, "amount, and currency are required");
+      return main_helper.error_response(
+        res,
+        "amount, and currency are required"
+      );
     }
 
     const address = addr.toLowerCase();
@@ -1073,7 +1101,7 @@ async function stakeCurrency(req, res) {
           [`assets.${currency}`]: -Number(amount),
         },
       },
-      { new: true },
+      { new: true }
     );
 
     const createStakePromise = currencyStakes.create({
@@ -1103,7 +1131,8 @@ async function stakeCurrency(req, res) {
 async function logout(req, res) {
   try {
     let address = req.address;
-    if (!address) return main_helper.error_response(res, "You are not logged in");
+    if (!address)
+      return main_helper.error_response(res, "You are not logged in");
 
     // Clear cookies
     res.clearCookie("Access-Token");
@@ -1116,7 +1145,7 @@ async function logout(req, res) {
           account_owner: address,
           account_category: "main",
         },
-        { $pull: { refresh_token_sessions: refreshToken } },
+        { $pull: { refresh_token_sessions: refreshToken } }
       );
     }
 
