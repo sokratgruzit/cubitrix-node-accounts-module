@@ -129,22 +129,24 @@ async function update_meta(req, res) {
     });
 
     if (account_meta_exists) {
-      // Regardless of previous email status, update the account.
-      const updated = await account_meta_exists.updateOne({
-        address,
-        name,
-        email, // Directly update email without verification.
-        mobile,
-        date_of_birth,
-        nationality,
-        avatar,
-        verified_at: null,
-        verified: false,
-        verification_code: "",
-      });
-
-      if (updated.acknowledged) {
-        return main_helper.success_response(res, "account updated");
+      const updated = await account_meta.findOneAndUpdate(
+        { address },
+        {
+          address,
+          name,
+          email,
+          mobile,
+          date_of_birth,
+          nationality,
+          avatar,
+          verified_at: null,
+          verified: false,
+          verification_code: "",
+        },
+        { new: true },
+      );
+      if (updated) {
+        return main_helper.success_response(res, updated);
       }
       return main_helper.error_response(res, "could not update");
     } else {

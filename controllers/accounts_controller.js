@@ -414,25 +414,17 @@ async function update_auth_account_password(req, res) {
   let account_meta_data = await account_meta.findOne({ address });
   if (account_meta_data && account_meta_data.email) {
     if (account_meta_data.verified) {
-      // account_auth.findOne({ address }, async function (err, user) {
-      //   if (err || !user) {
-      //     await account_auth.create({ address, password: newPassword });
-      //     return main_helper.success_response(res, "created");
-      //   }
-
-      //   if (user.password) {
-      //     const pass_match = await user.match_password(currentPassword);
-      //     if (!pass_match) return main_helper.error_response(res, "incorrect password");
-      //   }
-
-      //   await user.findOneupdateOne({ password: newPassword });
-      //   return main_helper.success_response(res, "password updated");
-      // });
-
       const authAcc = await account_auth.findOne({ address });
       if (!authAcc) {
-        await account_auth.create({ address, password: newPassword });
-        return main_helper.success_response(res, "created");
+        const createdAuth = await account_auth.create({ address, password: newPassword });
+
+        let infoObj = {};
+
+        infoObj.hasPasswordSet = createdAuth?.password ? true : false;
+        infoObj.otp_enabled = createdAuth?.otp_enabled;
+        infoObj.otp_verified = createdAuth?.otp_verified;
+
+        return main_helper.success_response(res, infoObj);
       }
 
       if (authAcc.password) {
@@ -440,9 +432,19 @@ async function update_auth_account_password(req, res) {
         if (!pass_match) return main_helper.error_response(res, "incorrect password");
       }
 
-      await account_auth.findOneAndUpdate({ address }, { password: newPassword });
+      const updatedAuth = await account_auth.findOneAndUpdate(
+        { address },
+        { password: newPassword },
+        { new: true },
+      );
 
-      return main_helper.success_response(res, "password updated");
+      let infoObj = {};
+
+      infoObj.hasPasswordSet = updatedAuth?.password ? true : false;
+      infoObj.otp_enabled = updatedAuth?.otp_enabled;
+      infoObj.otp_verified = updatedAuth?.otp_verified;
+
+      return main_helper.success_response(res, infoObj);
     } else {
       return main_helper.error_response(res, "email unverified");
     }
