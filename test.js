@@ -8,6 +8,8 @@ const isAuthenticated = require("./middleware/IsAuthenticated");
 const cookieParser = require("cookie-parser");
 
 const app = express();
+require("dotenv").config();
+
 app.use(express.json({ extended: true }));
 app.use(cookieParser());
 app.use(isAuthenticated);

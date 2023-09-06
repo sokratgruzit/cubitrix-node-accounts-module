@@ -133,6 +133,11 @@ async function update_meta(req, res) {
     });
 
     if (account_meta_exists) {
+      const emailExists = await account_meta.findOne({ email });
+      if (emailExists) {
+        return main_helper.error_response(res, "This email already taken");
+      }
+
       const updated = await account_meta.findOneAndUpdate(
         { address },
         {
@@ -275,7 +280,7 @@ async function resend_email(req, res) {
     );
 
     if (email_sent.success) return main_helper.success_response(res, "email sent");
-    return main_helper.error.response(res, "email resend failed");
+    return main_helper.error_response(res, "email resend failed");
   } catch (e) {
     console.log(e);
     return main_helper.error_response(res, "email resend failed");

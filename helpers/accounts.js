@@ -5,6 +5,7 @@ const email_helper = require("../helpers/email_template");
 const crypto = require("crypto");
 var nodemailer = require("nodemailer");
 
+require("dotenv").config();
 var transporter = nodemailer.createTransport({
   host: process.env.SENDER_EMAIL_HOST,
   port: process.env.SENDER_EMAIL_PORT,
