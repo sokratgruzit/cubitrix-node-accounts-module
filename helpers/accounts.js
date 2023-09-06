@@ -28,26 +28,20 @@ async function generate_verification_code() {
 // check_email_on_company
 async function check_email_on_company(email) {
   try {
-    // List of known company email domains
-    const companyDomains = ["company1.com", "company2.com", "gmail.com"];
+    const companyDomains = ["gmail.com", "company2.com", "examplecorp.com"];
 
-    // Split the email address into username and domain
     const parts = email.split("@");
 
-    // Check if the email has the correct format
     if (parts.length !== 2) {
       return false;
     }
 
-    // Extract the domain part
     const domain = parts[1];
 
-    // Check if the domain is in the list of company domains
     if (companyDomains.includes(domain)) {
       return true;
     }
 
-    // If the domain is not in the list, it's not a company email
     return false;
   } catch (e) {
     return false;
