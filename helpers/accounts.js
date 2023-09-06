@@ -109,36 +109,28 @@ async function check_and_send_verification_email(address, email) {
 }
 
 async function send_verification_mail(email, verification_code) {
-  let check_email = await check_email_on_company(email);
+  try {
+    let check_email = await check_email_on_company(email);
 
-  if (!check_email) {
-    return main_helper.error_message("Email isnot correct");
+    if (!check_email) {
+      return main_helper.error_message("Email isnot correct");
+    }
+
+    var mailOptions = {
+      from: process.env.SENDER_EMAIL,
+      to: email,
+      subject: "Verification Email",
+      html: email_helper.verification_template(
+        process.env.FRONTEND_URL + "/verify/" + verification_code,
+      ),
+    };
+
+    await transporter.sendMail(mailOptions);
+    return main_helper.success_message("Email sent");
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_message("sending email failed");
   }
-  // var transporter = nodemailer.createTransport({
-  //   service: "gmail",
-  //   auth: {
-  //     user: process.env.SENDER_EMAIL,
-  //     pass: process.env.SENDER_EMAIL_PASSWORD,
-  //   },
-  // });
-
-  var mailOptions = {
-    from: process.env.SENDER_EMAIL,
-    to: email,
-    subject: "Verification Email",
-    html: email_helper.verification_template(
-      process.env.FRONTEND_URL + "/verify/" + verification_code,
-    ),
-  };
-
-  let response;
-  console.log(email, process.env.SENDER_EMAIL);
-  await transporter.sendMail(mailOptions).catch((e) => {
-    response = main_helper.error_message("sending email failed");
-  });
-  response = main_helper.success_message("Email sent");
-
-  return response;
 }
 
 async function send_reset_password_email(email, verification_code) {
