@@ -5,6 +5,16 @@ const email_helper = require("../helpers/email_template");
 const crypto = require("crypto");
 var nodemailer = require("nodemailer");
 
+var transporter = nodemailer.createTransport({
+  host: process.env.SENDER_EMAIL_HOST,
+  port: process.env.SENDER_EMAIL_PORT,
+  secure: false,
+  auth: {
+    user: process.env.SENDER_EMAIL,
+    pass: process.env.SENDER_EMAIL_PASSWORD,
+  },
+});
+
 // generate code for verification
 async function generate_verification_code() {
   try {
@@ -19,7 +29,7 @@ async function generate_verification_code() {
 async function check_email_on_company(email) {
   try {
     // List of known company email domains
-    const companyDomains = ["company1.com", "company2.com", "examplecorp.com"];
+    const companyDomains = ["company1.com", "company2.com", "gmail.com"];
 
     // Split the email address into username and domain
     const parts = email.split("@");
@@ -115,13 +125,13 @@ async function send_verification_mail(email, verification_code) {
   if (!check_email) {
     return main_helper.error_message("Email isnot correct");
   }
-  var transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.SENDER_EMAIL,
-      pass: process.env.SENDER_EMAIL_PASSWORD,
-    },
-  });
+  // var transporter = nodemailer.createTransport({
+  //   service: "gmail",
+  //   auth: {
+  //     user: process.env.SENDER_EMAIL,
+  //     pass: process.env.SENDER_EMAIL_PASSWORD,
+  //   },
+  // });
 
   var mailOptions = {
     from: process.env.SENDER_EMAIL,
@@ -133,6 +143,7 @@ async function send_verification_mail(email, verification_code) {
   };
 
   let response;
+  console.log(email, process.env.SENDER_EMAIL);
   await transporter.sendMail(mailOptions).catch((e) => {
     response = main_helper.error_message("sending email failed");
   });
@@ -147,13 +158,13 @@ async function send_reset_password_email(email, verification_code) {
   if (!check_email) {
     return main_helper.error_message("Email isnot correct");
   }
-  var transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.SENDER_EMAIL,
-      pass: process.env.SENDER_EMAIL_PASSWORD,
-    },
-  });
+  // var transporter = nodemailer.createTransport({
+  //   service: "gmail",
+  //   auth: {
+  //     user: process.env.SENDER_EMAIL,
+  //     pass: process.env.SENDER_EMAIL_PASSWORD,
+  //   },
+  // });
 
   var mailOptions = {
     from: process.env.SENDER_EMAIL,
