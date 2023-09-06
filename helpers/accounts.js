@@ -97,38 +97,38 @@ async function check_and_send_verification_email(address, email) {
   }
   return main_helper.error_message("sending email failed");
 }
-
 async function send_verification_mail(email, verification_code) {
+  let check_email;
+  let response;
   try {
-    let check_email = await check_email_on_company(email);
-
-    if (!check_email) {
-      return main_helper.error_message("Email is not correct");
-    }
-
-    var transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.SENDER_EMAIL,
-        pass: process.env.SENDER_EMAIL_PASSWORD,
-      },
-    });
-
-    var mailOptions = {
-      from: process.env.SENDER_EMAIL,
-      to: email,
-      subject: "Verification Email",
-      html: email_helper.verification_template(
-        process.env.FRONTEND_URL + "/verify/" + verification_code,
-      ),
-    };
-
-    await transporter.sendMail(mailOptions);
-    return main_helper.success_message("Email sent");
-  } catch (error) {
-    console.error("Error in send_verification_mail:", error);
-    return main_helper.error_message("Sending email failed: " + error.message);
+    check_email = await check_email_on_company(email);
+  } catch (err) {
+    console.error("Error in checking email on company:", err);
+    return main_helper.error_message("Failed to check email");
   }
+
+  if (!check_email) {
+    return main_helper.error_message("Email is not correct");
+  }
+
+  const mailOptions = {
+    from: process.env.SENDER_EMAIL,
+    to: email,
+    subject: "Verification Email",
+    html: email_helper.verification_template(
+      `${process.env.FRONTEND_URL}/verify/${verification_code}`,
+    ),
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    response = main_helper.success_message("Email sent");
+  } catch (e) {
+    console.error("Error in sending email:", e);
+    response = main_helper.error_message("Sending email failed");
+  }
+
+  return response;
 }
 
 async function send_reset_password_email(email, verification_code) {
