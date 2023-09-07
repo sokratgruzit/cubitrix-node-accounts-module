@@ -8,7 +8,6 @@ const {
   accounts_keys,
   options,
   stakes,
-  currencyStakes,
 } = require("@cubitrix/models");
 
 const {
@@ -1057,77 +1056,6 @@ function hideName(name) {
   return firstLetter + middleAsterisks + lastLetter;
 }
 
-async function stakeCurrency(req, res) {
-  try {
-    let addr = req.address;
-    const { amount, currency, percentage = 0, duration } = req.body;
-
-    if (!addr) {
-      return main_helper.error_response(res, "You are not logged in");
-    }
-
-    if (!amount || !currency) {
-      return main_helper.error_response(
-        res,
-        "amount, and currency are required"
-      );
-    }
-
-    const address = addr.toLowerCase();
-
-    const mainAccount = await accounts.findOne({
-      account_owner: address,
-      account_category: "main",
-    });
-
-    if (!mainAccount) {
-      return main_helper.error_response(res, "account not found");
-    }
-
-    if (mainAccount.assets[currency] < Number(amount)) {
-      return main_helper.error_response(res, "insufficient balance");
-    }
-
-    let expires;
-    if (duration === "360 D") {
-      expires = Date.now() + 360 * 24 * 60 * 60 * 1000;
-    }
-
-    const updateAccountPromise = accounts.findOneAndUpdate(
-      { account_owner: address, account_category: "main" },
-      {
-        $inc: {
-          [`assets.${currency}Staked`]: Number(amount),
-          [`assets.${currency}`]: -Number(amount),
-        },
-      },
-      { new: true }
-    );
-
-    const createStakePromise = currencyStakes.create({
-      address,
-      amount: Number(amount),
-      currency,
-      percentage,
-      expires,
-    });
-
-    const [updatedAccount, createdStake] = await Promise.all([
-      updateAccountPromise,
-      createStakePromise,
-    ]);
-
-    if (!createdStake) {
-      return main_helper.error_response(res, "error staking currency");
-    }
-
-    return main_helper.success_response(res, updatedAccount);
-  } catch (e) {
-    console.log(e, "error staking currency");
-    return main_helper.error_response(res, "error staking currency");
-  }
-}
-
 async function logout(req, res) {
   try {
     let address = req.address;
@@ -1172,6 +1100,5 @@ module.exports = {
   update_current_rates,
   get_rates,
   get_recepient_name,
-  stakeCurrency,
   web3Connect,
 };
