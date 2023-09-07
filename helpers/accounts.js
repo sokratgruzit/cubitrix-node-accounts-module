@@ -6,10 +6,18 @@ const crypto = require("crypto");
 var nodemailer = require("nodemailer");
 
 require("dotenv").config();
+// var transporter = nodemailer.createTransport({
+//   host: process.env.SENDER_EMAIL_HOST,
+//   port: process.env.SENDER_EMAIL_PORT,
+//   secure: false,
+//   auth: {
+//     user: process.env.SENDER_EMAIL,
+//     pass: process.env.SENDER_EMAIL_PASSWORD,
+//   },
+// });
+
 var transporter = nodemailer.createTransport({
-  host: process.env.SENDER_EMAIL_HOST,
-  port: process.env.SENDER_EMAIL_PORT,
-  secure: false,
+  service: "gmail",
   auth: {
     user: process.env.SENDER_EMAIL,
     pass: process.env.SENDER_EMAIL_PASSWORD,
