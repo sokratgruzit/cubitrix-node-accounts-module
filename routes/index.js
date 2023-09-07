@@ -16,14 +16,17 @@ router.post("/login", account_controller.login_account);
 router.post("/web3Connect", account_controller.web3Connect);
 router.post("/recovery/login", account_controller.login_with_email);
 router.post("/logout", account_controller.logout);
-router.post("/update_profile_auth", account_controller.update_auth_account_password);
+router.post(
+  "/update_profile_auth",
+  account_controller.update_auth_account_password
+);
 router.post("/update_profile", account_meta_controller.update_meta);
 
 router.post("/verify", account_meta_controller.verify);
 router.post("/resend-email", account_meta_controller.resend_email);
 router.post(
   "/get-reset-password-email",
-  account_meta_controller.get_reset_password_email,
+  account_meta_controller.get_reset_password_email
 );
 router.post("/reset-password", account_meta_controller.reset_password);
 router.post("/activate-account", account_controller.activate_account);
@@ -43,7 +46,10 @@ router.get("/test", (req, res) => {
   res.status(200).send("hello api");
 });
 
-router.post("/create_different_accounts", account_controller.create_different_accounts);
+router.post(
+  "/create_different_accounts",
+  account_controller.create_different_accounts
+);
 router.post("/manage_extensions", account_controller.manage_extensions);
 // roles
 router.get("/roles", roles_controller.index);
@@ -51,7 +57,6 @@ router.get("/roles", roles_controller.index);
 router.get("/get_rates", account_controller.get_rates);
 router.post("/get_recepient_name", account_controller.get_recepient_name);
 
-router.post("/stake_currency", account_controller.stakeCurrency);
 router.post("/check-email", account_meta_controller.check_email);
 // get all account
 
