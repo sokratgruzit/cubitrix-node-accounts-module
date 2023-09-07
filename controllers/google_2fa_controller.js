@@ -106,18 +106,25 @@ const validate_OTP = async (req, res) => {
   }
 
   if (valid_token) {
-    const accessToken = jwt.sign({ address: account.address }, process.env.JWT_SECRET, {
-      expiresIn: "15m",
+    const mainAcc = await accounts.findOne({
+      account_owner: account.address,
+      account_category: "main",
     });
 
-    const refreshToken = jwt.sign({ address: account.address }, process.env.JWT_SECRET, {
-      expiresIn: "30d",
-    });
+    const accessToken = jwt.sign(
+      { address: account.address, mainAddress: mainAcc?.address },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "15m",
+      },
+    );
 
-    await accounts.findOneAndUpdate(
-      { account_owner: account.address, account_category: "main" },
-      { $push: { refresh_token_sessions: refreshToken } },
-      { new: true },
+    const refreshToken = jwt.sign(
+      { address: account.address, mainAddress: mainAcc?.address },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: "30d",
+      },
     );
 
     res.cookie("Access-Token", accessToken, {
