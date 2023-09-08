@@ -80,7 +80,9 @@ async function check_and_send_verification_email(address, email) {
   const verified_email_address = results[1].value;
   const verified_emails_all = results[2].value;
 
-  const email_already_verified = verified_emails_all.some((obj) => obj.verified === true);
+  const email_already_verified = verified_emails_all.some(
+    (obj) => obj.verified === true
+  );
 
   if (email_already_verified)
     return main_helper.error_message("email already exists & is verified");
@@ -94,7 +96,10 @@ async function check_and_send_verification_email(address, email) {
       address,
     });
 
-    let email_sent = await send_verification_mail(email, email_verification_code);
+    let email_sent = await send_verification_mail(
+      email,
+      email_verification_code
+    );
 
     if (email_sent.success) {
       return main_helper.success_message("email sent");
@@ -130,7 +135,7 @@ async function send_verification_mail(email, verification_code) {
       to: email,
       subject: "Verification Email",
       html: email_helper.verification_template(
-        process.env.FRONTEND_URL + "/verify/" + verification_code,
+        process.env.FRONTEND_URL + "/verify/" + verification_code
       ),
     };
 
@@ -155,7 +160,7 @@ async function send_reset_password_email(email, verification_code) {
       to: email,
       subject: "Reset Password",
       html: email_helper.reset_password_template(
-        process.env.FRONTEND_URL + "/reset-password/" + verification_code,
+        process.env.FRONTEND_URL + "/reset-password/" + verification_code
       ),
     };
 
@@ -167,10 +172,34 @@ async function send_reset_password_email(email, verification_code) {
   }
 }
 
+async function send_greeting_email(email) {
+  try {
+    let check_email = await check_email_on_company(email);
+
+    if (!check_email) {
+      return main_helper.error_message("Email isnot correct");
+    }
+
+    var mailOptions = {
+      from: process.env.SENDER_EMAIL,
+      to: email,
+      subject: "Welcome",
+      html: email_helper.greeting_template(),
+    };
+
+    await transporter.sendMail(mailOptions);
+    return true;
+  } catch (e) {
+    console.log(e);
+    return false;
+  }
+}
+
 module.exports = {
   generate_verification_code,
   check_and_send_verification_email,
   send_reset_password_email,
   send_verification_mail,
   check_email_on_company,
+  send_greeting_email,
 };

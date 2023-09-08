@@ -30,6 +30,29 @@ function verification_template(verification_link) {
   `;
 }
 
+function greeting_template() {
+  return `<!DOCTYPE html>
+  <html>
+  <head>
+    <title>Welcome</title>
+  </head>
+  <body>
+    <table align="center" width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-collapse: collapse;">
+      <tr>
+        <td style="padding: 20px;">
+          <h1 style="text-align:center;">Welcome On Board</h1>
+          <p> We Are Happy That You Joined Us</p>
+          <p>If you didn't make this request, you can safely ignore this email.</p>
+          <p>Best regards,</p>
+          <p>The Team</p>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+`;
+}
+
 function reset_password_template(reset_password_link) {
   return `<!DOCTYPE html>
   <html>
@@ -65,4 +88,5 @@ function reset_password_template(reset_password_link) {
 module.exports = {
   verification_template,
   reset_password_template,
+  greeting_template,
 };
