@@ -173,10 +173,10 @@ async function login_account(req, res) {
     }
     address = address.toLowerCase();
 
-    if (processingAccounts?.[address]) {
+    if (processingAccounts[address]) {
       return main_helper.error_response(res, "Account processing, try again later");
     }
-    processingAccounts?.[address] = true;
+    processingAccounts[address] = true;
 
     let account_exists = await accounts.findOne({
       address: address,
@@ -184,7 +184,7 @@ async function login_account(req, res) {
     });
 
     if (account_exists) {
-      delete processingAccounts?.[address];
+      delete processingAccounts[address];
       return main_helper.success_response(res, "account already exists");
     }
 
@@ -220,10 +220,12 @@ async function login_account(req, res) {
       ]);
     }
 
-    delete processingAccounts?.[address];
+    delete processingAccounts[address];
     return main_helper.success_response(res, "success");
   } catch (e) {
-    delete processingAccounts?.[address];
+    if (processingAccounts[address]) {
+      delete processingAccounts[address];
+    }
     return main_helper.error_response(res, main_helper.error_message(e?.message));
   }
 }
