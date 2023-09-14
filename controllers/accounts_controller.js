@@ -10,6 +10,8 @@ const {
   stakes,
 } = require("@cubitrix/models");
 
+require("dotenv").config();
+
 const {
   create_deposit_transaction,
 } = require("@cubitrix/cubitrix-node-transactions-module");
@@ -84,12 +86,6 @@ async function login_with_email(req, res) {
       },
     );
 
-    // await accounts.findOneAndUpdate(
-    //   { account_owner: account.address, account_category: "main" },
-    //   { $push: { refresh_token_sessions: refreshToken } },
-    //   { new: true },
-    // );
-
     res.cookie("Access-Token", accessToken, {
       sameSite: "none",
       httpOnly: true,
@@ -110,123 +106,112 @@ async function login_with_email(req, res) {
   main_helper.error_response(res, "no password found");
 }
 
+const processingAccounts = {};
 async function web3Connect(req, res) {
   let { signature, address } = req.body;
   if (!signature || !address) return main_helper.error_response(res, "missing fields");
-
   address = address.toLowerCase();
 
-  let message = "I confirm that this is my address";
-
-  let recoveredAddress = web3.eth.accounts.recover(message, signature);
-
-  if (recoveredAddress.toLowerCase() === address) {
-    const mainAcc = await accounts.findOne({
-      account_owner: address,
-      account_category: "main",
-    });
-
-    const accessToken = jwt.sign(
-      { address: address, mainAddress: mainAcc.address },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "15m",
-      },
-    );
-
-    const refreshToken = jwt.sign(
-      { address: address, mainAddress: mainAcc.address },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "30d",
-      },
-    );
-
-    res.cookie("Access-Token", accessToken, {
-      sameSite: "none",
-      httpOnly: true,
-      secure: true,
-    });
-
-    res.cookie("Refresh-Token", refreshToken, {
-      sameSite: "none",
-      httpOnly: true,
-      secure: true,
-    });
-
-    return res.status(200).send("Connected");
-  }
-
-  return res.status(401).send("Invalid signature");
-}
-
-const processingAccounts = {};
-async function login_account(req, res) {
   try {
-    let { address } = req.body;
-
-    if (!address) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("Fill all fields"),
-      );
-    }
-    address = address.toLowerCase();
-
     if (processingAccounts[address]) {
       return main_helper.error_response(res, "Account processing, try again later");
     }
     processingAccounts[address] = true;
 
-    let account_exists = await accounts.findOne({
-      address: address,
-      account_category: "external",
-    });
+    address = address.toLowerCase();
 
-    if (account_exists) {
-      delete processingAccounts[address];
-      return main_helper.success_response(res, "account already exists");
-    }
+    let message = "I confirm that this is my address";
 
-    let createdAcc = await accounts.create({
-      address: address,
-      account_category: "external",
-      account_owner: "",
-      active: true,
-    });
+    let recoveredAddress = web3.eth.accounts.recover(message, signature);
 
-    if (createdAcc) {
-      const [newAddressMain, newAddressSystem] = await Promise.all([
-        generate_new_address(),
-        generate_new_address(),
-      ]);
+    if (recoveredAddress.toLowerCase() === address) {
+      const mainAccFirst = await accounts.findOne({
+        account_owner: address,
+        account_category: "main",
+      });
 
-      await Promise.all([
-        accounts.create({
-          address: newAddressMain.toLowerCase(),
-          balance: 0,
+      if (!mainAccFirst) {
+        const [newAddressMain, newAddressSystem] = await Promise.all([
+          generate_new_address(),
+          generate_new_address(),
+        ]);
+        await Promise.all([
+          accounts.create({
+            address: address,
+            account_category: "external",
+            account_owner: "",
+            active: true,
+          }),
+          accounts.create({
+            address: newAddressMain.toLowerCase(),
+            balance: 0,
+            account_category: "main",
+            account_owner: address,
+            active: false,
+            step: 2,
+          }),
+          accounts.create({
+            address: newAddressSystem.toLowerCase(),
+            account_category: "system",
+            account_owner: address,
+          }),
+          account_auth.create({ address }),
+          account_meta.create({ address }),
+        ]);
+      }
+      let mainAcc;
+      if (!mainAccFirst) {
+        mainAcc = await accounts.findOne({
+          account_owner: address,
           account_category: "main",
-          account_owner: address,
-          active: false,
-          step: 2,
-        }),
-        accounts.create({
-          address: newAddressSystem.toLowerCase(),
-          account_category: "system",
-          account_owner: address,
-        }),
-        account_auth.create({ address }),
-        account_meta.create({ address }),
-      ]);
+        });
+      }
+
+      const accessToken = jwt.sign(
+        { address: address, mainAddress: mainAcc?.address },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "15m",
+        },
+      );
+
+      const refreshToken = jwt.sign(
+        { address: address, mainAddress: mainAcc?.address },
+        process.env.JWT_SECRET,
+        {
+          expiresIn: "30d",
+        },
+      );
+
+      res.cookie("Access-Token", accessToken, {
+        sameSite: "none",
+        httpOnly: true,
+        secure: true,
+      });
+
+      res.cookie("Refresh-Token", refreshToken, {
+        sameSite: "none",
+        httpOnly: true,
+        secure: true,
+      });
+
+      if (processingAccounts[address]) {
+        delete processingAccounts[address];
+      }
+
+      return res.status(200).send("Connected");
     }
 
-    delete processingAccounts[address];
-    return main_helper.success_response(res, "success");
-  } catch (e) {
     if (processingAccounts[address]) {
       delete processingAccounts[address];
     }
-    return main_helper.error_response(res, main_helper.error_message(e?.message));
+
+    return res.status(401).send("Invalid signature");
+  } catch (error) {
+    if (processingAccounts[address]) {
+      delete processingAccounts[address];
+    }
+    console.log(error);
   }
 }
 
@@ -323,7 +308,7 @@ async function create_different_accounts(req, res) {
       });
     }
     let account_web3 = new web3_accounts(
-      `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID_V3}`,
+      `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID_V3}`,
     );
     let create_account = account_web3.create();
     let created_address = create_account.address;
@@ -401,7 +386,7 @@ async function create_different_accounts(req, res) {
 
 async function generate_new_address() {
   let account_web3 = new web3_accounts(
-    `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID_V3}`,
+    `https://mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID_V3}`,
   );
   let create_account = account_web3.create();
   let created_address = create_account.address;
@@ -1078,7 +1063,6 @@ async function logout(req, res) {
 
 module.exports = {
   index,
-  login_account,
   logout,
   login_with_email,
   get_account,
