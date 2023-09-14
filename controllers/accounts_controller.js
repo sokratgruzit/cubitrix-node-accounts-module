@@ -159,8 +159,8 @@ async function web3Connect(req, res) {
           account_meta.create({ address }),
         ]);
       }
-      let mainAcc;
-      if (!mainAccFirst) {
+      let mainAcc = mainAccFirst;
+      if (!mainAcc) {
         mainAcc = await accounts.findOne({
           account_owner: address,
           account_category: "main",
