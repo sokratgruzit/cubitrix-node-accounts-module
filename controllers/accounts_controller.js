@@ -986,14 +986,7 @@ async function get_rates(req, res) {
 
 async function get_recepient_name(req, res) {
   try {
-    let address = req.address;
-
-    if (!address) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("You are not logged in"),
-      );
-    }
+    let { address } = req.body;
 
     if (address?.length < 42) {
       return main_helper.error_response(
