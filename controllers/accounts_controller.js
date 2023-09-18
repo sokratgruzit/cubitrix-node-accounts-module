@@ -801,7 +801,7 @@ async function manage_extensions(req, res) {
             ]);
           }
         }
-        [`extensions.${key}`] = value;
+        updateObj[`extensions.${key}`] = value;
       } else if (!accountMain.active) {
       }
     }
