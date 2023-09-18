@@ -131,10 +131,12 @@ async function web3Connect(req, res) {
       });
 
       if (!mainAccFirst) {
-        const [newAddressMain, newAddressSystem] = await Promise.all([
+        const [newAddressMain, newAddressSystem, newTradeAddress] = await Promise.all([
+          generate_new_address(),
           generate_new_address(),
           generate_new_address(),
         ]);
+
         await Promise.all([
           accounts.create({
             address: address,
@@ -154,6 +156,13 @@ async function web3Connect(req, res) {
             address: newAddressSystem.toLowerCase(),
             account_category: "system",
             account_owner: address,
+          }),
+          accounts.create({
+            address: newTradeAddress.toLowerCase(),
+            balance: 0,
+            account_category: "trade",
+            account_owner: address,
+            active: true,
           }),
           account_auth.create({ address }),
           account_meta.create({ address }),
@@ -750,30 +759,30 @@ async function manage_extensions(req, res) {
 
     for (const [key, value] of Object.entries(extensions)) {
       if (setup) {
-        if (key === "trade" && value === "true") {
-          const accountExtension = await accounts.findOne({
-            account_owner: address,
-            account_category: key,
-          });
-          if (!accountExtension) {
-            const newAddress = await generate_new_address();
-            const [] = await Promise.all([
-              accounts.create({
-                address: newAddress.toLowerCase(),
-                balance: 0,
-                account_category: key,
-                account_owner: address,
-                active: true,
-              }),
-            ]);
-            updateObj[`extensions.${key}`] = value;
-          } else {
-            updateObj[`extensions.${key}`] = value;
-          }
-        } else {
-          updateObj[`extensions.${key}`] = value;
-        }
-      } else if (accountMain.active) {
+        //   if (key === "trade" && value === "true") {
+        //     const accountExtension = await accounts.findOne({
+        //       account_owner: address,
+        //       account_category: key,
+        //     });
+        //     if (!accountExtension) {
+        //       const newAddress = await generate_new_address();
+        //       const [] = await Promise.all([
+        //         accounts.create({
+        //           address: newAddress.toLowerCase(),
+        //           balance: 0,
+        //           account_category: key,
+        //           account_owner: address,
+        //           active: true,
+        //         }),
+        //       ]);
+        //       updateObj[`extensions.${key}`] = value;
+        //     } else {
+        //       updateObj[`extensions.${key}`] = value;
+        //     }
+        //   } else {
+        //     updateObj[`extensions.${key}`] = value;
+        //   }
+        // } else if (accountMain.active) {
         if (key === "loan" && value === "true") {
           const accountExtension = await accounts.findOne({
             account_owner: address,
@@ -790,36 +799,10 @@ async function manage_extensions(req, res) {
                 active: true,
               }),
             ]);
-            updateObj[`extensions.${key}`] = value;
-            // if (accountMain.balance > 2) {
-            //   const newAddress = await generate_new_address();
-            //   const [] = await Promise.all([
-            //     // accountMain.updateOne({ $inc: { balance: 0 - 2 } }),
-            //     accounts.create({
-            //       address: newAddress.toLowerCase(),
-            //       balance: 0,
-            //       account_category: key,
-            //       account_owner: address,
-            //       active: true,
-            //     }),
-            //   ]);
-            //   updateObj[`extensions.${key}`] = value;
-            // } else {
-            //   return main_helper.error_response(
-            //     res,
-            //     main_helper.error_message("insufficient balance"),
-            //   );
-            // }
-          } else {
-            updateObj[`extensions.${key}`] = value;
           }
-        } else {
-          updateObj[`extensions.${key}`] = value;
         }
+        [`extensions.${key}`] = value;
       } else if (!accountMain.active) {
-        if (["staking", "notify"].includes(key)) {
-          updateObj[`extensions.${key}`] = value;
-        }
       }
     }
 
