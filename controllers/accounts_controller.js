@@ -802,7 +802,10 @@ async function manage_extensions(req, res) {
           }
         }
         updateObj[`extensions.${key}`] = value;
-      } else if (!accountMain.active) {
+      } else {
+        if (key !== "trade" && key !== "loan" && key !== "notify") {
+          updateObj[`extensions.${key}`] = value;
+        }
       }
     }
 
