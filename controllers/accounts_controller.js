@@ -484,7 +484,12 @@ async function activate_account(req, res) {
       );
     }
 
-    const userStakes = await stakes.find({ address: address });
+    const [userStakes, ratesObj] = await Promise.all([
+      stakes.find({ address: address }),
+      rates.findOne(),
+    ]);
+
+    //call rates
 
     const stakingContract = new web3.eth.Contract(
       STACK_ABI,
@@ -576,6 +581,7 @@ async function activate_account(req, res) {
             address: address,
             staketime: result.staketime,
             unstaketime: result.unstaketime,
+            A1_price: ratesObj?.atr?.usd ?? 2,
           }),
           accounts.findOneAndUpdate(
             { account_owner: address, account_category: "main" },
