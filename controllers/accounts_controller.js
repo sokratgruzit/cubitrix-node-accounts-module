@@ -257,6 +257,20 @@ async function handle_step(req, res) {
       );
     }
 
+    const ipAddress =
+      req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+    let ipAddresses = mainAccount.ips ?? [];
+    if (!ipAddresses.includes(ipAddress)) {
+      ipAddresses.push(ipAddress);
+      await accounts.findOneAndUpdate(
+        {
+          account_owner: address,
+          account_category: "main",
+        },
+        { ips: ipAddresses }
+      );
+    }
+
     const updatedMainAccount = await accounts.findOneAndUpdate(
       { account_owner: address, account_category: "main" },
       { step, active },
@@ -266,6 +280,7 @@ async function handle_step(req, res) {
       let mainAccountMeta = await account_meta.findOne({
         address: mainAccount.account_owner,
       });
+
       let send_greeting = await account_helper.send_greeting_email(
         mainAccountMeta.email
       );
