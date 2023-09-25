@@ -15,18 +15,23 @@ router.use(cookieParser());
 router.post("/web3Connect", account_controller.web3Connect);
 router.post("/recovery/login", account_controller.login_with_email);
 router.post("/logout", account_controller.logout);
-router.post("/update_profile_auth", account_controller.update_auth_account_password);
+router.post(
+  "/update_profile_auth",
+  account_controller.update_auth_account_password
+);
 router.post("/update_profile", account_meta_controller.update_meta);
 
 router.post("/verify", account_meta_controller.verify);
 router.post("/resend-email", account_meta_controller.resend_email);
 router.post(
   "/get-reset-password-email",
-  account_meta_controller.get_reset_password_email,
+  account_meta_controller.get_reset_password_email
 );
 router.post("/reset-password", account_meta_controller.reset_password);
 router.post("/activate-account", account_controller.activate_account);
 router.post("/handle-step", account_controller.handle_step);
+
+router.post("/became-elite-member", account_controller.become_elite_member);
 
 router.post("/get_account", account_controller.get_account);
 router.post("/get_account_by_type", account_controller.get_account_by_type);
@@ -42,7 +47,10 @@ router.get("/test", (req, res) => {
   res.status(200).send("hello api");
 });
 
-router.post("/create_different_accounts", account_controller.create_different_accounts);
+router.post(
+  "/create_different_accounts",
+  account_controller.create_different_accounts
+);
 router.post("/manage_extensions", account_controller.manage_extensions);
 // roles
 router.get("/roles", roles_controller.index);
