@@ -139,10 +139,13 @@ async function web3Connect(req, res) {
       });
 
       if (!mainAccFirst) {
-        const [newAddressMain, newAddressSystem] = await Promise.all([
-          generate_new_address(),
-          generate_new_address(),
-        ]);
+        const [newAddressMain, newAddressSystem, newTradeAddress] =
+          await Promise.all([
+            generate_new_address(),
+            generate_new_address(),
+            generate_new_address(),
+          ]);
+
         await Promise.all([
           accounts.create({
             address: address,
@@ -162,6 +165,13 @@ async function web3Connect(req, res) {
             address: newAddressSystem.toLowerCase(),
             account_category: "system",
             account_owner: address,
+          }),
+          accounts.create({
+            address: newTradeAddress.toLowerCase(),
+            balance: 0,
+            account_category: "trade",
+            account_owner: address,
+            active: true,
           }),
           account_auth.create({ address }),
           account_meta.create({ address }),
@@ -486,7 +496,12 @@ async function activate_account(req, res) {
       );
     }
 
-    const userStakes = await stakes.find({ address: address });
+    const [userStakes, ratesObj] = await Promise.all([
+      stakes.find({ address: address }),
+      rates.findOne(),
+    ]);
+
+    //call rates
 
     const stakingContract = new web3.eth.Contract(
       STACK_ABI,
@@ -582,6 +597,7 @@ async function activate_account(req, res) {
             address: address,
             staketime: result.staketime,
             unstaketime: result.unstaketime,
+            A1_price: ratesObj?.atr?.usd ?? 2,
           }),
           accounts.findOneAndUpdate(
             { account_owner: address, account_category: "main" },
@@ -765,30 +781,30 @@ async function manage_extensions(req, res) {
 
     for (const [key, value] of Object.entries(extensions)) {
       if (setup) {
-        if (key === "trade" && value === "true") {
-          const accountExtension = await accounts.findOne({
-            account_owner: address,
-            account_category: key,
-          });
-          if (!accountExtension) {
-            const newAddress = await generate_new_address();
-            const [] = await Promise.all([
-              accounts.create({
-                address: newAddress.toLowerCase(),
-                balance: 0,
-                account_category: key,
-                account_owner: address,
-                active: true,
-              }),
-            ]);
-            updateObj[`extensions.${key}`] = value;
-          } else {
-            updateObj[`extensions.${key}`] = value;
-          }
-        } else {
-          updateObj[`extensions.${key}`] = value;
-        }
-      } else if (accountMain.active) {
+        //   if (key === "trade" && value === "true") {
+        //     const accountExtension = await accounts.findOne({
+        //       account_owner: address,
+        //       account_category: key,
+        //     });
+        //     if (!accountExtension) {
+        //       const newAddress = await generate_new_address();
+        //       const [] = await Promise.all([
+        //         accounts.create({
+        //           address: newAddress.toLowerCase(),
+        //           balance: 0,
+        //           account_category: key,
+        //           account_owner: address,
+        //           active: true,
+        //         }),
+        //       ]);
+        //       updateObj[`extensions.${key}`] = value;
+        //     } else {
+        //       updateObj[`extensions.${key}`] = value;
+        //     }
+        //   } else {
+        //     updateObj[`extensions.${key}`] = value;
+        //   }
+        // } else if (accountMain.active) {
         if (key === "loan" && value === "true") {
           const accountExtension = await accounts.findOne({
             account_owner: address,
@@ -805,34 +821,11 @@ async function manage_extensions(req, res) {
                 active: true,
               }),
             ]);
-            updateObj[`extensions.${key}`] = value;
-            // if (accountMain.balance > 2) {
-            //   const newAddress = await generate_new_address();
-            //   const [] = await Promise.all([
-            //     // accountMain.updateOne({ $inc: { balance: 0 - 2 } }),
-            //     accounts.create({
-            //       address: newAddress.toLowerCase(),
-            //       balance: 0,
-            //       account_category: key,
-            //       account_owner: address,
-            //       active: true,
-            //     }),
-            //   ]);
-            //   updateObj[`extensions.${key}`] = value;
-            // } else {
-            //   return main_helper.error_response(
-            //     res,
-            //     main_helper.error_message("insufficient balance"),
-            //   );
-            // }
-          } else {
-            updateObj[`extensions.${key}`] = value;
           }
-        } else {
-          updateObj[`extensions.${key}`] = value;
         }
-      } else if (!accountMain.active) {
-        if (["staking", "notify"].includes(key)) {
+        updateObj[`extensions.${key}`] = value;
+      } else {
+        if (key !== "trade" && key !== "loan" && key !== "notify") {
           updateObj[`extensions.${key}`] = value;
         }
       }
@@ -970,7 +963,7 @@ async function get_account(req, res) {
 async function update_current_rates() {
   try {
     const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin&vs_currencies=usd"
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin,binancecoin&vs_currencies=usd"
     );
     const { bitcoin, ethereum } = response.data;
 
@@ -980,6 +973,7 @@ async function update_current_rates() {
         btc: { usd: bitcoin.usd },
         eth: { usd: ethereum.usd },
         usdc: { usd: response.data?.["usd-coin"]?.usd },
+        bnb: { usd: response.data?.["binancecoin"]?.usd },
         gold: { usd: 1961 },
         platinum: { usd: 966 },
       }
@@ -1001,14 +995,7 @@ async function get_rates(req, res) {
 
 async function get_recepient_name(req, res) {
   try {
-    let address = req.address;
-
-    if (!address) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("You are not logged in")
-      );
-    }
+    let { address } = req.body;
 
     if (address?.length < 42) {
       return main_helper.error_response(
