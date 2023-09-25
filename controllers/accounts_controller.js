@@ -947,7 +947,7 @@ async function get_account(req, res) {
 async function update_current_rates() {
   try {
     const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin&vs_currencies=usd",
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin,binancecoin&vs_currencies=usd",
     );
     const { bitcoin, ethereum } = response.data;
 
@@ -957,6 +957,7 @@ async function update_current_rates() {
         btc: { usd: bitcoin.usd },
         eth: { usd: ethereum.usd },
         usdc: { usd: response.data?.["usd-coin"]?.usd },
+        bnb: { usd: response.data?.["binancecoin"]?.usd },
         gold: { usd: 1961 },
         platinum: { usd: 966 },
       },
