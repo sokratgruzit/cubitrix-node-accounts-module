@@ -486,18 +486,10 @@ async function activate_account(req, res) {
       );
     }
 
-    // let newestAcc = await accounts.findOne({
-    //   account_owner: address,
-    //   account_category: "main",
-    // });
-
-    let [newestAcc, rates] = await Promise.all([
-      accounts.findOne({
-        account_owner: address,
-        account_category: "main",
-      }),
-      rates.findOne(),
-    ]);
+    let newestAcc = await accounts.findOne({
+      account_owner: address,
+      account_category: "main",
+    });
 
     if (!newestAcc) {
       return main_helper.error_response(
@@ -537,7 +529,7 @@ async function activate_account(req, res) {
     await mutex.acquire();
 
     function countViaRate(amount) {
-      return Number((amount / Number(rates?.atr?.usd))?.toFixed(2));
+      return Number((amount / Number(ratesObj?.atr?.usd))?.toFixed(2));
     }
 
     while (condition) {
