@@ -301,6 +301,51 @@ async function handle_step(req, res) {
   }
 }
 
+async function update_login_data(req, res) {
+  try {
+    let address = req.address;
+
+    if (!address) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("You are not logged in")
+      );
+    }
+
+    const mainAccount = await accounts.findOne({
+      account_owner: address,
+      account_category: "main",
+    });
+
+    if (!mainAccount) {
+      return main_helper.error_response(
+        res,
+        main_helper.error_message("account not found")
+      );
+    }
+
+    const ipAddress =
+      req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+    let ipAddresses = mainAccount.ips ?? [];
+    if (!ipAddresses.includes(ipAddress)) {
+      ipAddresses.push(ipAddress);
+      await accounts.findOneAndUpdate(
+        {
+          account_owner: address,
+          account_category: "main",
+        },
+        { ips: ipAddresses }
+      );
+    }
+    return main_helper.success_response(res, {
+      message: "success",
+    });
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_response(res, "something went wrong");
+  }
+}
+
 // create different accounts like loan,
 async function create_different_accounts(req, res) {
   try {
@@ -1115,4 +1160,5 @@ module.exports = {
   get_recepient_name,
   web3Connect,
   become_elite_member,
+  update_login_data,
 };
