@@ -912,6 +912,7 @@ async function get_account(req, res) {
 
     const aggregatedQuery = accounts.aggregate([
       { $match: { account_owner: address, account_category: "main" } },
+      { $project: { ips: 0 } },
       {
         $lookup: {
           from: "account_metas",
@@ -1080,12 +1081,12 @@ async function become_elite_member(req, res) {
     if (!address) return main_helper.error_response(res, "You are not logged in");
     let account_change = await accounts.findOneAndUpdate(
       { address },
-      { elite_member: true },
+      { elite_member: "pending" },
     );
     if (account_change) {
       return main_helper.success_response(res, "success");
     }
-    return main_helper.error_response(res, "errpr");
+    return main_helper.error_response(res, "error");
   } catch (e) {
     console.error(e);
     return main_helper.error_response(res, "error logging out");
