@@ -74,14 +74,16 @@
     "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "name": "Stakers",
     "outputs": [
-      { "internalType": "uint256", "name": "totalStakedTokenUser", "type": "uint256" },
-      { "internalType": "uint256", "name": "totalUnstakedTokenUser", "type": "uint256" },
+      { "internalType": "uint256", "name": "totalStakedAmtUser", "type": "uint256" },
+      { "internalType": "uint256", "name": "currentStakedAmtUser", "type": "uint256" },
+      { "internalType": "uint256", "name": "totalUnstakedAmtUser", "type": "uint256" },
       {
         "internalType": "uint256",
         "name": "totalClaimedRewardTokenUser",
         "type": "uint256"
       },
       { "internalType": "uint256", "name": "stakeCount", "type": "uint256" },
+      { "internalType": "uint256", "name": "currTierId", "type": "uint256" },
       { "internalType": "bool", "name": "alreadyExists", "type": "bool" }
     ],
     "stateMutability": "view",
@@ -92,6 +94,17 @@
     "name": "StakersID",
     "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "cateId", "type": "uint256" },
+      { "internalType": "uint256", "name": "bonus", "type": "uint256" },
+      { "internalType": "string", "name": "info", "type": "string" }
+    ],
+    "name": "createCate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
@@ -121,14 +134,7 @@
   },
   {
     "inputs": [],
-    "name": "maxStakeableToken",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "minimumStakeToken",
+    "name": "minimumStakeAmt",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -169,6 +175,13 @@
   },
   {
     "inputs": [{ "internalType": "uint256", "name": "index", "type": "uint256" }],
+    "name": "removeCate",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "uint256", "name": "index", "type": "uint256" }],
     "name": "removeTier",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -185,7 +198,10 @@
     "type": "function"
   },
   {
-    "inputs": [{ "internalType": "uint256", "name": "timeperiod", "type": "uint256" }],
+    "inputs": [
+      { "internalType": "uint256", "name": "timeperiod", "type": "uint256" },
+      { "internalType": "string", "name": "stext", "type": "string" }
+    ],
     "name": "stake",
     "outputs": [],
     "stateMutability": "payable",
@@ -216,8 +232,8 @@
     "inputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "name": "tInfo",
     "outputs": [
-      { "internalType": "uint256", "name": "minStakeToken", "type": "uint256" },
-      { "internalType": "uint256", "name": "maxStakeToken", "type": "uint256" },
+      { "internalType": "uint256", "name": "minStakeAmt", "type": "uint256" },
+      { "internalType": "uint256", "name": "maxStakeAmt", "type": "uint256" },
       { "internalType": "uint256", "name": "tierId", "type": "uint256" }
     ],
     "stateMutability": "view",
@@ -253,7 +269,7 @@
   },
   {
     "inputs": [],
-    "name": "totalStakedToken",
+    "name": "totalStakedAmt",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
@@ -267,7 +283,7 @@
   },
   {
     "inputs": [],
-    "name": "totalUnStakedToken",
+    "name": "totalUnStakedAmt",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
