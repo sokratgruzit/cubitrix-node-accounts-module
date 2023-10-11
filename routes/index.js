@@ -30,6 +30,7 @@ router.post(
 router.post("/reset-password", account_meta_controller.reset_password);
 router.post("/activate-account", account_controller.activate_account);
 router.post("/handle-step", account_controller.handle_step);
+router.post("/update-login-data", account_controller.update_login_data);
 
 router.post("/became-elite-member", account_controller.become_elite_member);
 
