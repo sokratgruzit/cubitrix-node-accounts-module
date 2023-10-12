@@ -1,6 +1,6 @@
 {
   "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.1.93",
+  "version": "0.1.94",
   "description": "module for managing accounts data",
   "main": "accounts.js",
   "scripts": {

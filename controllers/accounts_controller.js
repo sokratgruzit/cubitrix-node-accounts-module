@@ -566,8 +566,8 @@ async function activate_account(req, res) {
     mutexes[address] = mutex;
     await mutex.acquire();
 
-    function countViaRate(amount) {
-      return Number((amount / Number(ratesObj?.atr?.usd))?.toFixed(2));
+    function getDollarAMount(amount) {
+      return Number((amount * Number(ratesObj?.atr?.usd))?.toFixed(2));
     }
 
     while (condition) {
@@ -595,33 +595,30 @@ async function activate_account(req, res) {
           let stakedAmount = result.amount / 10 ** 18;
 
           if (!newestAcc?.tier?.value) {
-            updateObj.amount = stakedAmount;
-            if (stakedAmount <= countViaRate(500)) {
+            updateObj.amount = getDollarAMount(stakedAmount);
+            if (getDollarAMount(stakedAmount) <= 500) {
               updateObj.value = "Novice Navigator";
             } else if (
-              stakedAmount >= countViaRate(5000) &&
-              stakedAmount < countViaRate(20000)
+              getDollarAMount(stakedAmount) >= 5000 &&
+              getDollarAMount(stakedAmount) < 20000
             ) {
               updateObj.value = "Stellar Standard";
             } else if (
-              stakedAmount >= countViaRate(20000) &&
-              stakedAmount < countViaRate(100000)
+              getDollarAMount(stakedAmount) >= 20000 &&
+              getDollarAMount(stakedAmount) < 100000
             ) {
               updateObj.value = "Expert Edge";
-            } else if (stakedAmount > countViaRate(100000)) {
+            } else if (getDollarAMount(stakedAmount) > 100000) {
               updateObj.value = "Platinum Privilege";
             }
           } else {
-            const newAmount = newestAcc?.tier?.amount + stakedAmount;
+            const newAmount = newestAcc?.tier?.amount + getDollarAMount(stakedAmount);
             updateObj.amount = newAmount;
-            if (newAmount >= countViaRate(5000) && newAmount < countViaRate(20000)) {
+            if (newAmount >= 5000 && newAmount < 20000) {
               updateObj.value = "Stellar Standard";
-            } else if (
-              newAmount >= countViaRate(20000) &&
-              newAmount < countViaRate(100000)
-            ) {
+            } else if (newAmount >= 20000 && newAmount < 100000) {
               updateObj.value = "Expert Edge";
-            } else if (newAmount > countViaRate(100000)) {
+            } else if (newAmount > 100000) {
               updateObj.value = "Platinum Privilege";
             }
           }
