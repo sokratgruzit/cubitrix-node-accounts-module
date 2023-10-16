@@ -591,37 +591,15 @@ async function activate_account(req, res) {
         });
 
         let updateObj = {};
-        if (newestAcc?.tier?.value !== "Novice Navigator") {
-          let stakedAmount = result.amount / 10 ** 18;
-
-          if (!newestAcc?.tier?.value) {
-            updateObj.amount = getDollarAMount(stakedAmount);
-            if (getDollarAMount(stakedAmount) <= 500) {
-              updateObj.value = "Novice Navigator";
-            } else if (
-              getDollarAMount(stakedAmount) >= 5000 &&
-              getDollarAMount(stakedAmount) < 20000
-            ) {
-              updateObj.value = "Stellar Standard";
-            } else if (
-              getDollarAMount(stakedAmount) >= 20000 &&
-              getDollarAMount(stakedAmount) < 100000
-            ) {
-              updateObj.value = "Expert Edge";
-            } else if (getDollarAMount(stakedAmount) > 100000) {
-              updateObj.value = "Platinum Privilege";
-            }
-          } else {
-            const newAmount = newestAcc?.tier?.amount + getDollarAMount(stakedAmount);
-            updateObj.amount = newAmount;
-            if (newAmount >= 5000 && newAmount < 20000) {
-              updateObj.value = "Stellar Standard";
-            } else if (newAmount >= 20000 && newAmount < 100000) {
-              updateObj.value = "Expert Edge";
-            } else if (newAmount > 100000) {
-              updateObj.value = "Platinum Privilege";
-            }
-          }
+        const StakersRes = await stakingContract.methods.Stakers(address).call();
+        if (+StakersRes?.currTierId === 0) {
+          updateObj.value = "Novice Navigator";
+        } else if (+StakersRes?.currTierId === 1) {
+          updateObj.value = "Stellar Standard";
+        } else if (+StakersRes?.currTierId === 2) {
+          updateObj.value = "Expert Edge";
+        } else {
+          updateObj.value = "Platinum Privilege";
         }
 
         if (result.staketime * 1000 >= todayWithWiggle) {
