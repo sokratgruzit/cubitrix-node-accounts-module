@@ -1006,27 +1006,36 @@ async function get_account(req, res) {
     return main_helper.error_response(res, "error getting accounts");
   }
 }
-
 async function update_current_rates() {
   try {
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin,binancecoin&vs_currencies=usd",
     );
+
     const { bitcoin, ethereum } = response.data;
 
-    await rates.findOneAndUpdate(
-      {},
-      {
-        btc: { usd: bitcoin.usd },
-        eth: { usd: ethereum.usd },
-        usdc: { usd: response.data?.["usd-coin"]?.usd },
-        bnb: { usd: response.data?.["binancecoin"]?.usd },
-        gold: { usd: 1961 },
-        platinum: { usd: 966 },
-      },
-    );
+    if (
+      bitcoin &&
+      typeof bitcoin.usd === "number" &&
+      ethereum &&
+      typeof ethereum.usd === "number"
+    ) {
+      await rates.findOneAndUpdate(
+        {},
+        {
+          btc: { usd: bitcoin.usd },
+          eth: { usd: ethereum.usd },
+          usdc: { usd: response.data?.["usd-coin"]?.usd },
+          bnb: { usd: response.data?.["binancecoin"]?.usd },
+          gold: { usd: 1961 },
+          platinum: { usd: 966 },
+        },
+      );
+    } else {
+      console.error("Bitcoin and/or Ethereum rates are not valid numbers");
+    }
   } catch (error) {
-    console.error("Error fetching rates:", error);
+    console.error("Error fetching rates:", error?.response ?? error);
   }
 }
 
