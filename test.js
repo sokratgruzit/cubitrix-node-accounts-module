@@ -1,11 +1,13 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const router = require("./routes/index");
+const axios = require("axios");
 require("dotenv").config();
 const cors = require("cors");
 const cors_options = require("./config/cors_options");
 const isAuthenticated = require("./middleware/IsAuthenticated");
 const cookieParser = require("cookie-parser");
+const { update_current_rates } = require("./controllers/accounts_controller");
 
 const app = express();
 require("dotenv").config();
@@ -40,6 +42,10 @@ app.use(express.static(root));
 //       'index.html', { root }
 //    );
 // });
+
+// setInterval(async () => {
+//   update_current_rates();
+// }, 5000);
 
 async function start() {
   const PORT = process.env.PORT || 4000;

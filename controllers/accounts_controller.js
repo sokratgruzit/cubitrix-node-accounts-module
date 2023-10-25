@@ -986,6 +986,23 @@ async function get_account(req, res) {
 }
 async function update_current_rates() {
   try {
+    const apiKey = process.env.COMMODITIES_API_KEY;
+    const base = process.env.BASE_CURRENCY;
+    const commodities = process.env.COMMODITIES;
+    
+    const commodityResponse = await axios.get(`https://commodities-api.com/api/latest?access_key=${apiKey}&base=${base}&symbols=${commodities}`);
+    const commodityData = commodityResponse.data;
+
+    if (commodityData.data.success) {
+      await rates.findOneAndUpdate(
+        {},
+        {
+          gold: { usd: commodityData.data.rates.XAU },
+          platinum: { usd: commodityData.data.rates.XPT },
+        },
+      );
+    }
+
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin,binancecoin&vs_currencies=usd",
     );
@@ -1004,9 +1021,7 @@ async function update_current_rates() {
           btc: { usd: bitcoin.usd },
           eth: { usd: ethereum.usd },
           usdc: { usd: response.data?.["usd-coin"]?.usd },
-          bnb: { usd: response.data?.["binancecoin"]?.usd },
-          gold: { usd: 1961 },
-          platinum: { usd: 966 },
+          bnb: { usd: response.data?.["binancecoin"]?.usd }
         },
       );
     } else {
