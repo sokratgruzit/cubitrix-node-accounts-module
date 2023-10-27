@@ -364,7 +364,7 @@ async function create_different_accounts(req, res) {
 
     if (account_exists) {
       return main_helper.error_response(res, {
-        message: "user already exists",
+        message: "User already exists",
         data: account_exists,
       });
     }
