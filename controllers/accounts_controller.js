@@ -532,7 +532,7 @@ async function activate_account(req, res) {
     if (!newestAcc) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found"),
+        main_helper.error_message("Account not found"),
       );
     }
 
@@ -559,7 +559,7 @@ async function activate_account(req, res) {
     let incrementDaily = 0;
 
     if (mutexes[address]) {
-      return main_helper.error_response(res, "account is currently being updated");
+      return main_helper.error_response(res, "Account is currently being updated");
     }
 
     const mutex = mutexes[address] || new Mutex();
@@ -662,12 +662,12 @@ async function activate_account(req, res) {
     delete mutexes[address];
 
     return main_helper.success_response(res, {
-      message: "success",
+      message: "Account successfully activated",
       account: newestAcc,
     });
   } catch (e) {
     console.log(e, "acc");
-    return main_helper.error_response(res, "error updating accounts");
+    return main_helper.error_response(res, "Account activation failed");
   }
 }
 
