@@ -301,7 +301,7 @@ async function check_email(req, res) {
   try {
     let check_email = await account_helper.check_email_on_company(email);
     if (!check_email) {
-      return main_helper.error_response(res, "Email isnot correct");
+      return main_helper.error_response(res, "Email is not correct");
     }
     const emailExists = await account_meta.findOne({ email });
 

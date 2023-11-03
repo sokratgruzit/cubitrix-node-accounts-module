@@ -364,7 +364,7 @@ async function create_different_accounts(req, res) {
 
     if (account_exists) {
       return main_helper.error_response(res, {
-        message: "User already exists",
+        message: "user already exists",
         data: account_exists,
       });
     }
@@ -532,7 +532,7 @@ async function activate_account(req, res) {
     if (!newestAcc) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("Account not found"),
+        main_helper.error_message("account not found"),
       );
     }
 
@@ -559,7 +559,7 @@ async function activate_account(req, res) {
     let incrementDaily = 0;
 
     if (mutexes[address]) {
-      return main_helper.error_response(res, "Account is currently being updated");
+      return main_helper.error_response(res, "account is currently being updated");
     }
 
     const mutex = mutexes[address] || new Mutex();
@@ -662,12 +662,12 @@ async function activate_account(req, res) {
     delete mutexes[address];
 
     return main_helper.success_response(res, {
-      message: "Account successfully activated",
+      message: "success",
       account: newestAcc,
     });
   } catch (e) {
     console.log(e, "acc");
-    return main_helper.error_response(res, "Account activation failed");
+    return main_helper.error_response(res, "error updating accounts");
   }
 }
 
@@ -984,6 +984,7 @@ async function get_account(req, res) {
     return main_helper.error_response(res, "error getting accounts");
   }
 }
+
 async function update_current_rates() {
   try {
     const apiKey = process.env.COMMODITIES_API_KEY;
