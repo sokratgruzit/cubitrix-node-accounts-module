@@ -602,6 +602,8 @@ async function activate_account(req, res) {
           updateObj.value = "Platinum Privilege";
         }
 
+        console.log(updateObj)
+
         if (result.staketime * 1000 >= todayWithWiggle) {
           incrementDaily = result.amount / 10 ** 18;
         } else {
@@ -655,6 +657,7 @@ async function activate_account(req, res) {
         ]);
 
         newestStakes = [...newestStakes, createdStake];
+        console.log(newestStakes);
       }
     }
 
