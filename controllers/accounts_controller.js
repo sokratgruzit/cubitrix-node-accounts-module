@@ -249,7 +249,7 @@ async function handle_step(req, res) {
     if (!mainAccount) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found"),
+        main_helper.error_message("Account not found"),
       );
     }
 
@@ -598,11 +598,11 @@ async function activate_account(req, res) {
           updateObj.value = "Stellar Standard";
         } else if (+StakersRes?.currTierId === 2) {
           updateObj.value = "Expert Edge";
-        } else {
+        } else if (+StakersRes?.currTierId === 3) {
           updateObj.value = "Platinum Privilege";
+        } else {
+          updateObj.value = "Diamond VIP";
         }
-
-        console.log(updateObj)
 
         if (result.staketime * 1000 >= todayWithWiggle) {
           incrementDaily = result.amount / 10 ** 18;
@@ -657,7 +657,6 @@ async function activate_account(req, res) {
         ]);
 
         newestStakes = [...newestStakes, createdStake];
-        console.log(newestStakes);
       }
     }
 
@@ -988,7 +987,7 @@ async function get_account(req, res) {
   }
 }
 
-async function update_current_rates() {
+async function update_current_rates(req, res) {
   try {
     const apiKey = process.env.COMMODITIES_API_KEY;
     const base = process.env.BASE_CURRENCY;
@@ -1006,6 +1005,8 @@ async function update_current_rates() {
         },
       );
     }
+
+    console.log(commodityData.data.rates.XAU)
 
     const response = await axios.get(
       "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin,binancecoin&vs_currencies=usd",
@@ -1029,20 +1030,22 @@ async function update_current_rates() {
         },
       );
     } else {
-      console.error("Bitcoin and/or Ethereum rates are not valid numbers");
+      //console.error("Bitcoin and/or Ethereum rates are not valid numbers");
     }
   } catch (error) {
-    console.error("Error fetching rates:", error?.response ?? error);
+    //console.error("Error fetching rates:", error?.response ?? error);
   }
 }
 
 async function get_rates(req, res) {
   try {
-    const ratesObj = await rates.findOne();
-    res.status(200).json(ratesObj);
+    if (res) {
+      const ratesObj = await rates.findOne();
+      return res.status(200).json(ratesObj);
+    }
   } catch (e) {
     console.log(e);
-    res.status(500).json("failed to get rates");
+    return res.status(500).json("failed to get rates");
   }
 }
 

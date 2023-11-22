@@ -7,7 +7,7 @@ const cors = require("cors");
 const cors_options = require("./config/cors_options");
 const isAuthenticated = require("./middleware/IsAuthenticated");
 const cookieParser = require("cookie-parser");
-const { update_current_rates } = require("./controllers/accounts_controller");
+// const { update_current_rates, get_rates } = require("./controllers/accounts_controller");
 
 const app = express();
 require("dotenv").config();
@@ -45,7 +45,8 @@ app.use(express.static(root));
 
 // setInterval(async () => {
 //   update_current_rates();
-// }, 5000);
+//   get_rates();
+// }, 3000);
 
 async function start() {
   const PORT = process.env.PORT || 4000;
