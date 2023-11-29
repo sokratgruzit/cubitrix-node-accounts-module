@@ -1006,10 +1006,8 @@ async function update_current_rates(req, res) {
       );
     }
 
-    console.log(commodityData.data.rates.XAU)
-
     const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,usd-coin,binancecoin&vs_currencies=usd",
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,tether&vs_currencies=usd",
     );
 
     const { bitcoin, ethereum } = response.data;
@@ -1025,7 +1023,7 @@ async function update_current_rates(req, res) {
         {
           btc: { usd: bitcoin.usd },
           eth: { usd: ethereum.usd },
-          usdc: { usd: response.data?.["usd-coin"]?.usd },
+          tether: { usd: response.data?.["tether"]?.usd },
           bnb: { usd: response.data?.["binancecoin"]?.usd }
         },
       );
