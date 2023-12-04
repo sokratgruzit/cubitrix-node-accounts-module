@@ -1023,7 +1023,7 @@ async function update_current_rates(req, res) {
         {
           btc: { usd: bitcoin.usd },
           eth: { usd: ethereum.usd },
-          tether: { usd: response.data?.["tether"]?.usd },
+          usdt: { usd: response.data?.["tether"]?.usd },
           bnb: { usd: response.data?.["binancecoin"]?.usd }
         },
       );
