@@ -1,6 +1,6 @@
 {
   "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.1.121",
+  "version": "0.1.122",
   "description": "module for managing accounts data",
   "main": "accounts.js",
   "scripts": {
@@ -10,8 +10,8 @@
   "author": "jinx",
   "license": "MIT",
   "dependencies": {
-    "@cubitrix/cubitrix-node-transactions-module": ">=0.1.127",
-    "@cubitrix/models": ">=0.1.35",
+    "@cubitrix/cubitrix-node-transactions-module": ">=0.1.129",
+    "@cubitrix/models": ">=0.1.36",
     "async-mutex": ">=0.4.0",
     "axios": "^1.4.0",
     "bcrypt": "^5.1.0",
