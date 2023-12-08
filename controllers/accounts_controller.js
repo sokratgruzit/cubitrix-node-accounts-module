@@ -1,5 +1,6 @@
 const main_helper = require("../helpers/index");
 const account_helper = require("../helpers/accounts");
+const BigNumber = require('bignumber.js');
 const {
   accounts,
   account_meta,
@@ -109,6 +110,7 @@ async function login_with_email(req, res) {
 }
 
 const processingAccounts = {};
+
 async function web3Connect(req, res) {
   let { signature, address } = req.body;
 
@@ -552,11 +554,11 @@ async function activate_account(req, res) {
     let newestStakes = userStakes;
     let loopCount = userStakes.length - 1;
 
-    let todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
-    let monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
+    // let todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
+    // let monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
 
-    let incrementMonthly = 0;
-    let incrementDaily = 0;
+    // let incrementMonthly = 0;
+    // let incrementDaily = 0;
 
     if (mutexes[address]) {
       return main_helper.error_response(res, "account is currently being updated");
@@ -604,45 +606,98 @@ async function activate_account(req, res) {
           updateObj.value = "Diamond VIP";
         }
 
+        const amountInBigNumber = new BigNumber(result.amount);
+
+        const todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
+        const monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
+
+        let incrementMonthly = new BigNumber(0);
+        let incrementDaily = new BigNumber(0);
+
+        // if (result.staketime * 1000 >= todayWithWiggle) {
+        //   incrementDaily = result.amount / 10 ** 18;
+        // } else {
+        //   incrementDaily = 0;
+        // }
+
+        // if (result.staketime * 1000 >= monthWithWiggle) {
+        //   incrementMonthly = result.amount / 10 ** 18;
+        // } else {
+        //   incrementMonthly = 0;
+        // }
         if (result.staketime * 1000 >= todayWithWiggle) {
-          incrementDaily = result.amount / 10 ** 18;
-        } else {
-          incrementDaily = 0;
+          incrementDaily = amountInBigNumber.dividedBy(10 ** 18);
         }
 
         if (result.staketime * 1000 >= monthWithWiggle) {
-          incrementMonthly = result.amount / 10 ** 18;
-        } else {
-          incrementMonthly = 0;
+          incrementMonthly = amountInBigNumber.dividedBy(10 ** 18);
         }
 
+        // const [createdStake] = await Promise.all([
+        //   stakes.create({
+        //     amount: result.amount / 10 ** 18,
+        //     reward: result.reward / 10 ** 18,
+        //     address: address,
+        //     staketime: result.staketime,
+        //     unstaketime: result.unstaketime,
+        //     A1_price: ratesObj?.atr?.usd ?? 2,
+        //   }),
         const [createdStake] = await Promise.all([
           stakes.create({
-            amount: result.amount / 10 ** 18,
-            reward: result.reward / 10 ** 18,
+            amount: amountInBigNumber.dividedBy(10 ** 18).toString(),
+            reward: new BigNumber(result.reward).dividedBy(10 ** 18).toString(),
             address: address,
             staketime: result.staketime,
             unstaketime: result.unstaketime,
             A1_price: ratesObj?.atr?.usd ?? 2,
           }),
+          // accounts.findOneAndUpdate(
+          //   { account_owner: address, account_category: "main" },
+          //   {
+          //     $inc: {
+          //       stakedThisMonth: incrementMonthly,
+          //       stakedToday: incrementDaily,
+          //       stakedTotal: result.amount / 10 ** 18,
+          //     },
+          //     tier: updateObj,
+          //   },
+          //   { new: true },
+          // ),
           accounts.findOneAndUpdate(
             { account_owner: address, account_category: "main" },
             {
               $inc: {
-                stakedThisMonth: incrementMonthly,
-                stakedToday: incrementDaily,
-                stakedTotal: result.amount / 10 ** 18,
+                stakedThisMonth: incrementMonthly.toString(),
+                stakedToday: incrementDaily.toString(),
+                stakedTotal: amountInBigNumber.dividedBy(10 ** 18).toString(),
               },
               tier: updateObj,
             },
             { new: true },
           ),
+          // create_deposit_transaction(
+          //   address,
+          //   result.amount / 10 ** 18,
+          //   "ether",
+          //   "deposit",
+          // ),
           create_deposit_transaction(
             address,
-            result.amount / 10 ** 18,
+            amountInBigNumber.dividedBy(10 ** 18).toString(),
             "ether",
             "deposit",
           ),
+          // accounts.findOneAndUpdate(
+          //   {
+          //     account_owner: address,
+          //     account_category: "trade",
+          //   },
+          //   {
+          //     $inc: {
+          //       balance: result.amount / 10 ** 18,
+          //     },
+          //   },
+          // ),
           accounts.findOneAndUpdate(
             {
               account_owner: address,
@@ -650,7 +705,7 @@ async function activate_account(req, res) {
             },
             {
               $inc: {
-                balance: result.amount / 10 ** 18,
+                balance: amountInBigNumber.dividedBy(10 ** 18).toString(),
               },
             },
           ),
