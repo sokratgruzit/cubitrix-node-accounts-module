@@ -594,6 +594,7 @@ async function activate_account(req, res) {
 
         let updateObj = {};
         const StakersRes = await stakingContract.methods.Stakers(address).call();
+        console.log(StakersRes)
         if (+StakersRes?.currTierId === 0) {
           updateObj.value = "Novice Navigator";
         } else if (+StakersRes?.currTierId === 1) {
