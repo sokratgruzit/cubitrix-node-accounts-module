@@ -549,7 +549,7 @@ async function activate_account(req, res) {
     if (!newestAcc) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("account not found")
+        main_helper.error_message("Account not found")
       );
     }
 
@@ -586,16 +586,12 @@ async function activate_account(req, res) {
     mutexes[address] = mutex;
     await mutex.acquire();
 
-    function getDollarAMount(amount) {
-      return Number((amount * Number(ratesObj?.atr?.usd))?.toFixed(2));
-    }
-
     while (condition) {
       loopCount++;
-      const result = await stakingContract.methods
-        .stakersRecord(address, loopCount)
-        .call();
-      if (result.staketime == 0) {
+      const result = await stakingContract.methods.stakersRecord(address, loopCount).call();
+
+      console.log(`res ${loopCount}: `, result)
+      if (!result || result.staketime == 0) {
         condition = false;
         break;
       }
@@ -605,15 +601,9 @@ async function activate_account(req, res) {
           !newestStakes.some((item) => item.staketime === result.staketime)) &&
         !result.unstaked
       ) {
-        newestAcc = await accounts.findOne({
-          account_owner: address,
-          account_category: "main",
-        });
-
         let updateObj = {};
-        const StakersRes = await stakingContract.methods
-          .Stakers(address)
-          .call();
+        const StakersRes = await stakingContract.methods.Stakers(address).call();
+        
         if (+StakersRes?.currTierId === 0) {
           updateObj.value = "Novice Navigator";
         } else if (+StakersRes?.currTierId === 1) {
