@@ -549,11 +549,7 @@ async function activate_account(req, res) {
     if (!newestAcc) {
       return main_helper.error_response(
         res,
-<<<<<<< HEAD
-        main_helper.error_message("Account not found"),
-=======
-        main_helper.error_message("account not found")
->>>>>>> 60fa7e488f8cfcf5b016e7ea55cc1cbcb84690c8
+        main_helper.error_message("Account not found")
       );
     }
 
@@ -606,14 +602,8 @@ async function activate_account(req, res) {
         !result.unstaked
       ) {
         let updateObj = {};
-<<<<<<< HEAD
         const StakersRes = await stakingContract.methods.Stakers(address).call();
         
-=======
-        const StakersRes = await stakingContract.methods
-          .Stakers(address)
-          .call();
->>>>>>> 60fa7e488f8cfcf5b016e7ea55cc1cbcb84690c8
         if (+StakersRes?.currTierId === 0) {
           updateObj.value = "Novice Navigator";
         } else if (+StakersRes?.currTierId === 1) {
