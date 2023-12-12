@@ -1028,14 +1028,12 @@ async function get_account(req, res) {
       },
     ]);
 
-    const accounts_dataQuery = accounts
-      .find(
-        {
-          $or: [{ account_owner: address }, { address: address }],
-        },
-        { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 }
-      )
-      .populate("currencyStakes");
+    const accounts_dataQuery = accounts.find(
+      {
+        $or: [{ account_owner: address }, { address: address }],
+      },
+      { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 }
+    );
 
     const auth_accQuery = account_auth.findOne({ address: address });
 
