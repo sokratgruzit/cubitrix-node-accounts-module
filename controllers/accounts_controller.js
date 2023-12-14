@@ -560,6 +560,12 @@ async function activate_account(req, res) {
     // let incrementMonthly = 0;
     // let incrementDaily = 0;
 
+    const todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
+    const monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
+
+    let incrementMonthly = new BigNumber(0);
+    let incrementDaily = new BigNumber(0);
+
     if (mutexes[address]) {
       return main_helper.error_response(res, "account is currently being updated");
     }
@@ -607,12 +613,6 @@ async function activate_account(req, res) {
         }
 
         const amountInBigNumber = new BigNumber(result.amount);
-
-        const todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
-        const monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
-
-        let incrementMonthly = new BigNumber(0);
-        let incrementDaily = new BigNumber(0);
 
         // if (result.staketime * 1000 >= todayWithWiggle) {
         //   incrementDaily = result.amount / 10 ** 18;
