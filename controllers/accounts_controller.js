@@ -530,123 +530,6 @@ async function update_auth_account_password(req, res) {
   }
 }
 
-async function activate_account_register(req, res) {
-  try {
-    let address = req.address;
-    address = address.toLowerCase();
-
-    if (!address) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("You are not logged in")
-      );
-    }
-
-    let newestAcc = await accounts.findOne({
-      account_owner: address,
-      account_category: "main",
-    });
-
-    if (!newestAcc) {
-      return main_helper.error_response(
-        res,
-        main_helper.error_message("Account not found")
-      );
-    }
-
-    const [userStakes, ratesObj] = await Promise.all([
-      stakes.find({ address: address }),
-      rates.findOne(),
-    ]);
-
-    const stakingContract = new web3.eth.Contract(
-      STACK_ABI,
-      process.env.STAKING_CONTRACT_ADDRESS
-    );
-
-    if (userStakes.length === 0) {
-      let updateObj = {};
-      const stakers = await stakingContract.methods.Stakers(address).call();
-      const stakersRecord = await stakingContract.methods.stakersRecord(address, 0).call();
-
-      if (+stakers?.currTierId === 0) {
-        updateObj.value = "Novice Navigator";
-      } else if (+stakers?.currTierId === 1) {
-        updateObj.value = "Stellar Standard";
-      } else if (+stakers?.currTierId === 2) {
-        updateObj.value = "Expert Edge";
-      } else if (+stakers?.currTierId === 3) {
-        updateObj.value = "Platinum Privilege";
-      } else {
-        updateObj.value = "Diamond VIP";
-      }
-
-      const amountInBigNumber = new BigNumber(stakersRecord.amount);
-
-      const todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
-      const monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
-
-      let incrementMonthly = new BigNumber(0);
-      let incrementDaily = new BigNumber(0);
-
-      if (result.staketime * 1000 >= todayWithWiggle) {
-        incrementDaily = amountInBigNumber.dividedBy(10 ** 18);
-      }
-
-      if (result.staketime * 1000 >= monthWithWiggle) {
-        incrementMonthly = amountInBigNumber.dividedBy(10 ** 18);
-      }
-
-      await Promise.all([
-        stakes.create({
-          amount: amountInBigNumber.dividedBy(10 ** 18).toString(),
-          reward: new BigNumber(stakersRecord.reward).dividedBy(10 ** 18).toString(),
-          address: address,
-          staketime: stakersRecord.staketime,
-          unstaketime: stakersRecord.unstaketime,
-          A1_price: ratesObj?.atr?.usd ?? 2,
-        }),
-        accounts.findOneAndUpdate(
-          { account_owner: address, account_category: "main" },
-          {
-            $inc: {
-              stakedThisMonth: incrementMonthly.toString(),
-              stakedToday: incrementDaily.toString(),
-              stakedTotal: amountInBigNumber.dividedBy(10 ** 18).toString(),
-            },
-            tier: updateObj,
-          },
-          { new: true }
-        ),
-        create_deposit_transaction(
-          address,
-          amountInBigNumber.dividedBy(10 ** 18).toString(),
-          "ether",
-          "deposit"
-        ),
-        accounts.findOneAndUpdate(
-          {
-            account_owner: address,
-            account_category: "trade",
-          },
-          {
-            $inc: {
-              balance: amountInBigNumber.dividedBy(10 ** 18).toString(),
-            },
-          }
-        ),
-      ]);
-
-      return main_helper.success_response(res, {
-        message: "success",
-        account: newestAcc,
-      });
-    }
-  } catch (e) {
-    return main_helper.error_response(res, "error updating accounts");
-  }
-}
-
 async function activate_account(req, res) {
   try {
     let address = req.address;
@@ -675,8 +558,6 @@ async function activate_account(req, res) {
       stakes.find({ address: address }),
       rates.findOne(),
     ]);
-
-    //call rates
 
     const stakingContract = new web3.eth.Contract(
       STACK_ABI,
@@ -707,19 +588,20 @@ async function activate_account(req, res) {
     while (condition) {
       loopCount++;
       const result = await stakingContract.methods.stakersRecord(address, loopCount).call();
+      const StakersRes = await stakingContract.methods.Stakers(address).call();
 
+      console.log(StakersRes)
+
+      console.log('hoho', newestStakes.length === 0, !newestStakes.some((item) => item.staketime === result.staketime), result)
       if (!result || result.staketime == 0) {
         condition = false;
         break;
       }
 
       if (
-        (newestStakes.length === 0 ||
-          !newestStakes.some((item) => item.staketime === result.staketime)) &&
-        !result.unstaked
+        (newestStakes.length === 0 || !newestStakes.some((item) => item.staketime === result.staketime)) && !result.unstaked
       ) {
         let updateObj = {};
-        const StakersRes = await stakingContract.methods.Stakers(address).call();
         
         if (+StakersRes?.currTierId === 0) {
           updateObj.value = "Novice Navigator";
@@ -732,6 +614,8 @@ async function activate_account(req, res) {
         } else {
           updateObj.value = "Diamond VIP";
         }
+
+        console.log(updateObj.value);
 
         const amountInBigNumber = new BigNumber(result.amount);
 
@@ -1331,7 +1215,6 @@ module.exports = {
   activate_account,
   manage_extensions,
   handle_step,
-  activate_account_register,
   // open_utility_accounts,
   update_current_rates,
   get_rates,
