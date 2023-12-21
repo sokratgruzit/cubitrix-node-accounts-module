@@ -598,7 +598,6 @@ async function activate_account(req, res) {
 
       console.log(StakersRes)
 
-      console.log('hoho', newestStakes.length === 0, !newestStakes.some((item) => item.staketime === result.staketime), result)
       if (!result || result.staketime == 0) {
         condition = false;
         break;
