@@ -31,7 +31,7 @@
     "web3-eth-accounts": "^1.8.1"
   },
   "peerDependencies": {
-    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.185",
+    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.192",
     "@cubitrix/models": ">=0.1.49",
     "async-mutex": ">=0.4.0",
     "axios": "^1.4.0",
