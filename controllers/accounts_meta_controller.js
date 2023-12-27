@@ -285,6 +285,7 @@ async function resend_email(req, res) {
     const email_sent = await account_helper.send_verification_mail(
       verify_email.email,
       code,
+      verify_email.name,
     );
 
     if (email_sent.success) return main_helper.success_response(res, "email sent");

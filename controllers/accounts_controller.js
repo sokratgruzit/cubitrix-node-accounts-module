@@ -291,8 +291,9 @@ async function handle_step(req, res) {
       });
 
       let send_greeting = await account_helper.send_greeting_email(
-        mainAccountMeta.email
+        mainAccountMeta.email, mainAccountMeta.name
       );
+      console.log(mainAccountMeta, "mainAccountMeta");
       return main_helper.success_response(res, {
         message: "success",
         account: updatedMainAccount,
@@ -568,22 +569,10 @@ async function activate_account(req, res) {
     let newestStakes = userStakes;
     let loopCount = userStakes.length - 1;
 
-    // let todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
-    // let monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
-
-    // let incrementMonthly = 0;
-    // let incrementDaily = 0;
-
-    const todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
-    const monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
-
-    let incrementMonthly = new BigNumber(0);
-    let incrementDaily = new BigNumber(0);
-
     if (mutexes[address]) {
       return main_helper.error_response(
         res,
-        "account is currently being updated"
+        "Account is currently being updated"
       );
     }
 
@@ -591,12 +580,11 @@ async function activate_account(req, res) {
     mutexes[address] = mutex;
     await mutex.acquire();
 
+    const StakersRes = await stakingContract.methods.Stakers(address).call();
+
     while (condition) {
       loopCount++;
       const result = await stakingContract.methods.stakersRecord(address, loopCount).call();
-      const StakersRes = await stakingContract.methods.Stakers(address).call();
-
-      console.log(StakersRes)
 
       if (!result || result.staketime == 0) {
         condition = false;
@@ -620,21 +608,14 @@ async function activate_account(req, res) {
           updateObj.value = "Diamond VIP";
         }
 
-        console.log(updateObj.value);
-
         const amountInBigNumber = new BigNumber(result.amount);
 
-        // if (result.staketime * 1000 >= todayWithWiggle) {
-        //   incrementDaily = result.amount / 10 ** 18;
-        // } else {
-        //   incrementDaily = 0;
-        // }
+        const todayWithWiggle = Date.now() - 28 * 60 * 60 * 1000;
+        const monthWithWiggle = Date.now() - 30 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000;
 
-        // if (result.staketime * 1000 >= monthWithWiggle) {
-        //   incrementMonthly = result.amount / 10 ** 18;
-        // } else {
-        //   incrementMonthly = 0;
-        // }
+        let incrementMonthly = new BigNumber(0);
+        let incrementDaily = new BigNumber(0);
+
         if (result.staketime * 1000 >= todayWithWiggle) {
           incrementDaily = amountInBigNumber.dividedBy(10 ** 18);
         }
@@ -643,15 +624,6 @@ async function activate_account(req, res) {
           incrementMonthly = amountInBigNumber.dividedBy(10 ** 18);
         }
 
-        // const [createdStake] = await Promise.all([
-        //   stakes.create({
-        //     amount: result.amount / 10 ** 18,
-        //     reward: result.reward / 10 ** 18,
-        //     address: address,
-        //     staketime: result.staketime,
-        //     unstaketime: result.unstaketime,
-        //     A1_price: ratesObj?.atr?.usd ?? 2,
-        //   }),
         const [createdStake] = await Promise.all([
           stakes.create({
             amount: amountInBigNumber.dividedBy(10 ** 18).toString(),
@@ -661,18 +633,6 @@ async function activate_account(req, res) {
             unstaketime: result.unstaketime,
             A1_price: ratesObj?.atr?.usd ?? 2,
           }),
-          // accounts.findOneAndUpdate(
-          //   { account_owner: address, account_category: "main" },
-          //   {
-          //     $inc: {
-          //       stakedThisMonth: incrementMonthly,
-          //       stakedToday: incrementDaily,
-          //       stakedTotal: result.amount / 10 ** 18,
-          //     },
-          //     tier: updateObj,
-          //   },
-          //   { new: true },
-          // ),
           accounts.findOneAndUpdate(
             { account_owner: address, account_category: "main" },
             {
@@ -685,29 +645,12 @@ async function activate_account(req, res) {
             },
             { new: true }
           ),
-          // create_deposit_transaction(
-          //   address,
-          //   result.amount / 10 ** 18,
-          //   "ether",
-          //   "deposit",
-          // ),
           create_deposit_transaction(
             address,
             amountInBigNumber.dividedBy(10 ** 18).toString(),
             "ether",
             "deposit"
           ),
-          // accounts.findOneAndUpdate(
-          //   {
-          //     account_owner: address,
-          //     account_category: "trade",
-          //   },
-          //   {
-          //     $inc: {
-          //       balance: result.amount / 10 ** 18,
-          //     },
-          //   },
-          // ),
           accounts.findOneAndUpdate(
             {
               account_owner: address,
