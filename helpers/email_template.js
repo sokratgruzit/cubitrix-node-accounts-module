@@ -53,7 +53,7 @@ function greeting_template(userName) {
         <table align="center" width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-collapse: collapse;">
           <tr>
             <td style="padding: 20px;">
-              <h1 style="text-align:center;">Dear ${userName}</h1>
+              <h2 style="text-align:center;">Dear ${userName}</h2>
               <p>We are delighted to confirm your successful registration with us.</p>
               <p>Welcome aboard! It's fantastic to have you with us, and we're eager to see what you'll
               accomplish.
