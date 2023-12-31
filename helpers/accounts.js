@@ -1,9 +1,14 @@
-const { verified_emails } = require("@cubitrix/models");
+const {verified_emails} = require("@cubitrix/models");
 
 const main_helper = require("../helpers/index");
 const email_helper = require("../helpers/email_template");
 const crypto = require("crypto");
 var nodemailer = require("nodemailer");
+const decryptEnv = require("../utils/decryptEnv");
+
+const SENDER_EMAIL_PASSWORD = process.env.SENDER_EMAIL_PASSWORD;
+
+const senderEmailPass = decryptEnv(SENDER_EMAIL_PASSWORD);
 
 require("dotenv").config();
 // var transporter = nodemailer.createTransport({
@@ -20,7 +25,7 @@ var transporter = nodemailer.createTransport({
   service: "gmail",
   auth: {
     user: process.env.SENDER_EMAIL,
-    pass: process.env.SENDER_EMAIL_PASSWORD,
+    pass: senderEmailPass,
   },
 });
 
@@ -66,8 +71,8 @@ async function check_and_send_verification_email(address, email) {
   }
   const results = await Promise.allSettled([
     generate_verification_code(),
-    verified_emails.findOne({ address }),
-    verified_emails.find({ email }),
+    verified_emails.findOne({address}),
+    verified_emails.find({email}),
   ]);
   if (results[0].status === "rejected")
     return main_helper.error_message(results[0].reason.toString());

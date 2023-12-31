@@ -7,18 +7,10 @@ const cors = require("cors");
 const cors_options = require("./config/cors_options");
 const isAuthenticated = require("./middleware/IsAuthenticated");
 const cookieParser = require("cookie-parser");
+const decryptEnv = require("./utils/decryptEnv");
 
-const CryptoJS = require("crypto-js");
-
-const SECRET_KEY = process.env.SECRET_KEY;
 const MONGO_URL = process.env.MONGO_URL;
-
-function decrypt(ciphertext, secretKey) {
-  const bytes = CryptoJS.AES.decrypt(ciphertext, secretKey);
-  const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-  return decryptedText;
-}
-const mongoUrl = decrypt(MONGO_URL, SECRET_KEY);
+const mongoUrl = decryptEnv(MONGO_URL);
 // const { update_current_rates, get_rates } = require("./controllers/accounts_controller");
 
 const app = express();

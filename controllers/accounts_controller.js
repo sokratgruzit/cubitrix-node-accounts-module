@@ -34,19 +34,13 @@ const {Mutex} = require("async-mutex");
 
 const mutexes = {};
 
-const CryptoJS = require("crypto-js");
+const decryptEnv = require("../utils/decryptEnv");
 
-const SECRET_KEY = process.env.SECRET_KEY;
 const INFURA_PROJECT_ID_V3 = process.env.INFURA_PROJECT_ID_V3;
 const STAKING_CONTRACT_ADDRESS = process.env.STAKING_CONTRACT_ADDRESS;
 
-function decrypt(ciphertext, secretKey) {
-  const bytes = CryptoJS.AES.decrypt(ciphertext, secretKey);
-  const decryptedText = bytes.toString(CryptoJS.enc.Utf8);
-  return decryptedText;
-}
-const infuraProjectId = decrypt(INFURA_PROJECT_ID_V3, SECRET_KEY);
-const stakingContractAddress = decrypt(STAKING_CONTRACT_ADDRESS, SECRET_KEY);
+const infuraProjectId = decryptEnv(INFURA_PROJECT_ID_V3);
+const stakingContractAddress = decryptEnv(STAKING_CONTRACT_ADDRESS);
 
 require("dotenv").config();
 
