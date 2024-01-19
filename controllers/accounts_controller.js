@@ -117,9 +117,9 @@ async function login_with_email(req, res) {
 const processingAccounts = {};
 
 async function web3Connect(req, res) {
-  let { signature, address } = req.body;
+  let { signature, address, walletConnect } = req.body;
 
-  if (!signature || !address)
+  if (!walletConnect && (!signature || !address))
     return main_helper.error_response(res, "missing fields");
   address = address.toLowerCase();
 
@@ -136,10 +136,13 @@ async function web3Connect(req, res) {
 
     let message = "I confirm that this is my address";
 
-    let recoveredAddress = web3.eth.accounts.recover(message, signature);
-    const ipAddress =
-      req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-    if (recoveredAddress.toLowerCase() === address) {
+    let recoveredAddress;
+    
+    if (!walletConnect) recoveredAddress = web3.eth.accounts.recover(message, signature);
+
+    const ipAddress = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+    
+    if (recoveredAddress && recoveredAddress.toLowerCase() === address || walletConnect) {
       await update_login_data(address, ipAddress);
 
       const mainAccFirst = await accounts.findOne({
@@ -291,8 +294,9 @@ async function handle_step(req, res) {
       });
 
       let send_greeting = await account_helper.send_greeting_email(
-        mainAccountMeta.email
+        mainAccountMeta.email, mainAccountMeta.name
       );
+      console.log(mainAccountMeta, "mainAccountMeta");
       return main_helper.success_response(res, {
         message: "success",
         account: updatedMainAccount,

@@ -98,7 +98,8 @@ async function check_and_send_verification_email(address, email) {
 
     let email_sent = await send_verification_mail(
       email,
-      email_verification_code
+      email_verification_code,
+      verified_email_address.name
     );
 
     if (email_sent.success) {
@@ -115,14 +116,18 @@ async function check_and_send_verification_email(address, email) {
     address: address,
   });
   // send email
-  let email_sent = await send_verification_mail(email, email_verification_code);
+  let email_sent = await send_verification_mail(
+    email,
+    email_verification_code,
+    verified_email_address.name
+  );
   if (email_sent.success) {
     return main_helper.success_message("email sent");
   }
   return main_helper.error_message("sending email failed");
 }
 
-async function send_verification_mail(email, verification_code) {
+async function send_verification_mail(email, verification_code, userName) {
   try {
     let check_email = await check_email_on_company(email);
 
@@ -133,9 +138,10 @@ async function send_verification_mail(email, verification_code) {
     var mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Verification Email",
+      subject: "Verify Your Email for A1",
       html: email_helper.verification_template(
-        process.env.FRONTEND_URL + "/verify/" + verification_code
+        process.env.FRONTEND_URL + "/verify/" + verification_code,
+        userName
       ),
     };
 
@@ -172,19 +178,21 @@ async function send_reset_password_email(email, verification_code) {
   }
 }
 
-async function send_greeting_email(email) {
+async function send_greeting_email(email, userName) {
   try {
     let check_email = await check_email_on_company(email);
 
     if (!check_email) {
-      return main_helper.error_message("Email isnot correct");
+      return main_helper.error_message("Email is not correct");
     }
+
+    var mailContent = email_helper.greeting_template(userName);
 
     var mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Welcome",
-      html: email_helper.greeting_template(),
+      subject: mailContent.subject,
+      html: mailContent.body,
     };
 
     await transporter.sendMail(mailOptions);
