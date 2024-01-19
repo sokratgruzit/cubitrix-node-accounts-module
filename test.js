@@ -7,12 +7,16 @@ const cors = require("cors");
 const cors_options = require("./config/cors_options");
 const isAuthenticated = require("./middleware/IsAuthenticated");
 const cookieParser = require("cookie-parser");
+const decryptEnv = require("./utils/decryptEnv");
+
+const MONGO_URL = process.env.MONGO_URL;
+const mongoUrl = decryptEnv(MONGO_URL);
 // const { update_current_rates, get_rates } = require("./controllers/accounts_controller");
 
 const app = express();
 require("dotenv").config();
 
-app.use(express.json({ extended: true }));
+app.use(express.json({extended: true}));
 app.use(cookieParser());
 app.use(isAuthenticated);
 
@@ -52,11 +56,13 @@ async function start() {
   const PORT = process.env.PORT || 4000;
   try {
     mongoose.set("strictQuery", false);
-    await mongoose.connect(process.env.MONGO_URL, {
+    await mongoose.connect(mongoUrl, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    app.listen(PORT, () => console.log(`App has been started on port ${PORT}...`));
+    app.listen(PORT, () =>
+      console.log(`App has been started on port ${PORT}...`)
+    );
   } catch (e) {
     console.log(`Server Error ${e.message}`);
     process.exit(1);
