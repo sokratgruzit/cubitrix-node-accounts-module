@@ -143,7 +143,7 @@ async function send_verification_mail(email, verification_code, userName) {
     var mailOptions = {
       from: process.env.SENDER_EMAIL,
       to: email,
-      subject: "Verify Your Email for A1",
+      subject: "Verify Your Email for AONE",
       html: email_helper.verification_template(
         process.env.FRONTEND_URL + "/verify/" + verification_code,
         userName
