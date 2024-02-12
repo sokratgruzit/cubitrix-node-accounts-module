@@ -10,7 +10,7 @@ function verification_template(verification_link, userName) {
       <tr>
         <td style="padding: 20px;">
           <h1 style="text-align:center;">Dear ${userName},
-          Thank you for updating your profile with A1. To complete the process, we need you to verify your
+          Thank you for updating your profile with AONE. To complete the process, we need you to verify your
           email address. Simply click on the link below to confirm:
           </h1>
           <p>Thanks for updating profile. please verify your email address by clicking the button below:</p>
@@ -27,12 +27,12 @@ function verification_template(verification_link, userName) {
           account, please reach out to us directly at <a href="mailto:${process.env.COMPANY_EMAIL}">${process.env.COMPANY_EMAIL}</a> Our support team is ready to assist you with
           any concerns.
           </p>
-          <p><b>In case you did not sign up for an account with A1, please ignore this email and refrain from
+          <p><b>In case you did not sign up for an account with AONE, please ignore this email and refrain from
           clicking the verification link. We apologize for any inconvenience and appreciate your
           understanding.</b>
           </p>
           <p>Best regards,</p>
-          <p>A1 Gold Team</p>
+          <p>AONE Gold Team</p>
         </td>
       </tr>
     </table>
@@ -43,7 +43,7 @@ function verification_template(verification_link, userName) {
 
 function greeting_template(userName) {
   return {
-    subject: "Welcome to A1 - Your Registration is Confirmed!",
+    subject: "Welcome to AONE - Your Registration is Confirmed!",
     body: `<!DOCTYPE html>
       <html>
       <head>
@@ -60,7 +60,7 @@ function greeting_template(userName) {
               </p>
               <p>If this registration was not initiated by you, please disregard this email.</p>
               <p>Best regards,</p>
-              <p>A1 Gold Team
+              <p>AONE Gold Team
               </p>
             </td>
           </tr>
