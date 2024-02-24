@@ -125,7 +125,7 @@ async function login_with_email(req, res) {
 const processingAccounts = {};
 
 async function web3Connect(req, res) {
-  let { signature, address, walletConnect } = req.body;
+  let {signature, address, walletConnect} = req.body;
 
   if (!walletConnect && (!signature || !address))
     return main_helper.error_response(res, "missing fields");
@@ -145,12 +145,17 @@ async function web3Connect(req, res) {
     let message = "I confirm that this is my address";
 
     let recoveredAddress;
-    
-    if (!walletConnect) recoveredAddress = web3.eth.accounts.recover(message, signature);
 
-    const ipAddress = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-    
-    if (recoveredAddress && recoveredAddress.toLowerCase() === address || walletConnect) {
+    if (!walletConnect)
+      recoveredAddress = web3.eth.accounts.recover(message, signature);
+
+    const ipAddress =
+      req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+    if (
+      (recoveredAddress && recoveredAddress.toLowerCase() === address) ||
+      walletConnect
+    ) {
       await update_login_data(address, ipAddress);
 
       const mainAccFirst = await accounts.findOne({
@@ -1027,16 +1032,16 @@ async function update_current_rates(req, res) {
         {},
         {
           gold: {usd: commodityData.data.rates.XAU},
-          platinum: {usd: commodityData.data.rates.XPT},
+          // platinum: {usd: commodityData.data.rates.XPT},
         }
       );
     }
 
     const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,tether&vs_currencies=usd"
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,tether,tron&vs_currencies=usd"
     );
 
-    const {bitcoin, ethereum} = response.data;
+    const {bitcoin, ethereum, tether, binancecoin, tron} = response.data;
 
     if (
       bitcoin &&
@@ -1049,8 +1054,9 @@ async function update_current_rates(req, res) {
         {
           btc: {usd: bitcoin.usd},
           eth: {usd: ethereum.usd},
-          usdt: {usd: response.data?.["tether"]?.usd},
-          bnb: {usd: response.data?.["binancecoin"]?.usd},
+          usdt: {usd: tether?.usd},
+          bnb: {usd: binancecoin?.usd},
+          trx: {usd: tron?.usd},
         }
       );
     } else {
