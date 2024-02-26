@@ -56,7 +56,8 @@ async function check_email_on_company(email) {
       return true;
     }
 
-    return false;
+    //return false;
+    return true;
   } catch (e) {
     return false;
   }
