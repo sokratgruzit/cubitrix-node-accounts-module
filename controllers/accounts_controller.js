@@ -30,7 +30,7 @@ const STACK_ABI = require("../abi/stack.json");
 
 const ObjectId = require("mongodb").ObjectId;
 
-const {Mutex} = require("async-mutex");
+const { Mutex } = require("async-mutex");
 
 const mutexes = {};
 
@@ -50,12 +50,12 @@ function index(name) {
 }
 
 async function login_with_email(req, res) {
-  let {email, password} = req.body;
+  let { email, password } = req.body;
   let check_email = await account_helper.check_email_on_company(email);
   if (!check_email) {
     return main_helper.error_response(res, "Email isnot correct");
   }
-  const account = await account_meta.findOne({email});
+  const account = await account_meta.findOne({ email });
   if (!account) {
     return main_helper.error_response(
       res,
@@ -63,7 +63,7 @@ async function login_with_email(req, res) {
     );
   }
 
-  const found = await account_auth.findOne({address: account.address});
+  const found = await account_auth.findOne({ address: account.address });
   if (!found) {
     return main_helper.error_response(res, "account not found");
   }
@@ -87,7 +87,7 @@ async function login_with_email(req, res) {
       account_category: "main",
     });
     const accessToken = jwt.sign(
-      {address: account.address, mainAddress: mainAcc?.address},
+      { address: account.address, mainAddress: mainAcc?.address },
       process.env.JWT_SECRET,
       {
         expiresIn: "15m",
@@ -95,7 +95,7 @@ async function login_with_email(req, res) {
     );
 
     const refreshToken = jwt.sign(
-      {address: account.address, mainAddress: mainAcc?.address},
+      { address: account.address, mainAddress: mainAcc?.address },
       process.env.JWT_SECRET,
       {
         expiresIn: "30d",
@@ -145,12 +145,17 @@ async function web3Connect(req, res) {
     let message = "I confirm that this is my address";
 
     let recoveredAddress;
-    
-    if (!walletConnect) recoveredAddress = web3.eth.accounts.recover(message, signature);
 
-    const ipAddress = req.headers["x-forwarded-for"] || req.connection.remoteAddress;
-    
-    if (recoveredAddress && recoveredAddress.toLowerCase() === address || walletConnect) {
+    if (!walletConnect)
+      recoveredAddress = web3.eth.accounts.recover(message, signature);
+
+    const ipAddress =
+      req.headers["x-forwarded-for"] || req.connection.remoteAddress;
+
+    if (
+      (recoveredAddress && recoveredAddress.toLowerCase() === address) ||
+      walletConnect
+    ) {
       await update_login_data(address, ipAddress);
 
       const mainAccFirst = await accounts.findOne({
@@ -193,8 +198,8 @@ async function web3Connect(req, res) {
             account_owner: address,
             active: true,
           }),
-          account_auth.create({address}),
-          account_meta.create({address}),
+          account_auth.create({ address }),
+          account_meta.create({ address }),
         ]);
       }
       let mainAcc = mainAccFirst;
@@ -206,7 +211,7 @@ async function web3Connect(req, res) {
       }
 
       const accessToken = jwt.sign(
-        {address: address, mainAddress: mainAcc?.address},
+        { address: address, mainAddress: mainAcc?.address },
         process.env.JWT_SECRET,
         {
           expiresIn: "15m",
@@ -214,7 +219,7 @@ async function web3Connect(req, res) {
       );
 
       const refreshToken = jwt.sign(
-        {address: address, mainAddress: mainAcc?.address},
+        { address: address, mainAddress: mainAcc?.address },
         process.env.JWT_SECRET,
         {
           expiresIn: "30d",
@@ -255,7 +260,7 @@ async function web3Connect(req, res) {
 
 async function handle_step(req, res) {
   try {
-    let {step, active} = req.body;
+    let { step, active } = req.body;
     let address = req.address;
 
     if (!address) {
@@ -287,14 +292,14 @@ async function handle_step(req, res) {
           account_owner: address,
           account_category: "main",
         },
-        {ips: ipAddresses}
+        { ips: ipAddresses }
       );
     }
 
     const updatedMainAccount = await accounts.findOneAndUpdate(
-      {account_owner: address, account_category: "main"},
-      {step, active},
-      {new: true}
+      { account_owner: address, account_category: "main" },
+      { step, active },
+      { new: true }
     );
     if (step == 6) {
       let mainAccountMeta = await account_meta.findOne({
@@ -346,7 +351,7 @@ async function update_login_data(address, ipAddress) {
           account_owner: address,
           account_category: "main",
         },
-        {ips: ipAddresses}
+        { ips: ipAddresses }
       );
     }
     return true;
@@ -359,7 +364,7 @@ async function update_login_data(address, ipAddress) {
 // create different accounts like loan,
 async function create_different_accounts(req, res) {
   try {
-    let {type} = req.body;
+    let { type } = req.body;
 
     let address = req.address;
 
@@ -370,7 +375,7 @@ async function create_different_accounts(req, res) {
       );
     }
 
-    let option = await options.findOne({key: "extension_options"});
+    let option = await options.findOne({ key: "extension_options" });
 
     let fee;
 
@@ -417,12 +422,12 @@ async function create_different_accounts(req, res) {
 
     if (account_saved) {
       await accounts.findOneAndUpdate(
-        {account_owner: address, account_category: "main"},
-        {$inc: {balance: -fee}}
+        { account_owner: address, account_category: "main" },
+        { $inc: { balance: -fee } }
       );
     }
 
-    res.status(200).send({message: "account opened", data: account_saved});
+    res.status(200).send({ message: "account opened", data: account_saved });
   } catch (e) {
     console.log(e.message);
   }
@@ -490,17 +495,17 @@ async function generate_new_address() {
 }
 
 async function update_auth_account_password(req, res) {
-  let {currentPassword, newPassword} = req.body;
+  let { currentPassword, newPassword } = req.body;
   let address = req.address;
 
   if (!address) {
     return main_helper.error_response(res, "You are not logged in");
   }
 
-  let account_meta_data = await account_meta.findOne({address});
+  let account_meta_data = await account_meta.findOne({ address });
   if (account_meta_data && account_meta_data.email) {
     if (account_meta_data.verified) {
-      const authAcc = await account_auth.findOne({address});
+      const authAcc = await account_auth.findOne({ address });
       if (!authAcc) {
         const createdAuth = await account_auth.create({
           address,
@@ -523,9 +528,9 @@ async function update_auth_account_password(req, res) {
       }
 
       const updatedAuth = await account_auth.findOneAndUpdate(
-        {address},
-        {password: newPassword},
-        {new: true}
+        { address },
+        { password: newPassword },
+        { new: true }
       );
 
       let infoObj = {};
@@ -568,7 +573,7 @@ async function activate_account(req, res) {
     }
 
     const [userStakes, ratesObj] = await Promise.all([
-      stakes.find({address: address}),
+      stakes.find({ address: address }),
       rates.findOne(),
     ]);
 
@@ -651,7 +656,7 @@ async function activate_account(req, res) {
             A1_price: ratesObj?.atr?.usd ?? 2,
           }),
           accounts.findOneAndUpdate(
-            {account_owner: address, account_category: "main"},
+            { account_owner: address, account_category: "main" },
             {
               $inc: {
                 stakedThisMonth: incrementMonthly.toString(),
@@ -660,7 +665,7 @@ async function activate_account(req, res) {
               },
               tier: updateObj,
             },
-            {new: true}
+            { new: true }
           ),
           create_deposit_transaction(
             address,
@@ -796,7 +801,7 @@ async function activate_account(req, res) {
 
 async function manage_extensions(req, res) {
   try {
-    let {extensions, setup} = req.body;
+    let { extensions, setup } = req.body;
     let address = req.address;
 
     if (!address || !extensions) {
@@ -809,8 +814,8 @@ async function manage_extensions(req, res) {
     address = address.toLowerCase();
 
     const [accountMain, accountMeta] = await Promise.all([
-      accounts.findOne({account_owner: address, account_category: "main"}),
-      account_meta.findOne({address: address}),
+      accounts.findOne({ account_owner: address, account_category: "main" }),
+      account_meta.findOne({ address: address }),
     ]);
 
     if (!accountMain) {
@@ -875,16 +880,16 @@ async function manage_extensions(req, res) {
         }
         updateObj[`extensions.${key}`] = value;
       } else {
-        if (key !== "trade" && key !== "loan" && key !== "notify") {
+        if (key !== "loan" && key !== "notify") {
           updateObj[`extensions.${key}`] = value;
         }
       }
     }
 
     const updatedAccount = await accounts.findOneAndUpdate(
-      {account_owner: address, account_category: "main"},
-      {$set: updateObj},
-      {new: true}
+      { account_owner: address, account_category: "main" },
+      { $set: updateObj },
+      { new: true }
     );
 
     return main_helper.success_response(res, {
@@ -899,7 +904,7 @@ async function manage_extensions(req, res) {
 
 async function get_account_by_type(req, res) {
   try {
-    let {type} = req.body;
+    let { type } = req.body;
 
     let address = req.address;
 
@@ -950,8 +955,8 @@ async function get_account(req, res) {
     }
 
     const aggregatedQuery = accounts.aggregate([
-      {$match: {account_owner: address, account_category: "main"}},
-      {$project: {ips: 0}},
+      { $match: { account_owner: address, account_category: "main" } },
+      { $project: { ips: 0 } },
       {
         $lookup: {
           from: "account_metas",
@@ -960,10 +965,10 @@ async function get_account(req, res) {
           as: "meta",
         },
       },
-      {$unwind: "$meta"},
+      { $unwind: "$meta" },
       {
         $addFields: {
-          meta_id_objectId: {$toObjectId: "$meta._id"},
+          meta_id_objectId: { $toObjectId: "$meta._id" },
         },
       },
       {
@@ -978,12 +983,12 @@ async function get_account(req, res) {
 
     const accounts_dataQuery = accounts.find(
       {
-        $or: [{account_owner: address}, {address: address}],
+        $or: [{ account_owner: address }, { address: address }],
       },
-      {_id: 0, address: 1, account_category: 1, assets: 1, balance: 1}
+      { _id: 0, address: 1, account_category: 1, assets: 1, balance: 1 }
     );
 
-    const auth_accQuery = account_auth.findOne({address: address});
+    const auth_accQuery = account_auth.findOne({ address: address });
 
     const [aggregatedResults, accounts_data, auth_acc] = await Promise.all([
       aggregatedQuery,
@@ -1026,17 +1031,17 @@ async function update_current_rates(req, res) {
       await rates.findOneAndUpdate(
         {},
         {
-          gold: {usd: commodityData.data.rates.XAU},
-          platinum: {usd: commodityData.data.rates.XPT},
+          gold: { usd: commodityData.data.rates.XAU },
+          // platinum: {usd: commodityData.data.rates.XPT},
         }
       );
     }
 
     const response = await axios.get(
-      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,tether&vs_currencies=usd"
+      "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,binancecoin,tether,tron&vs_currencies=usd"
     );
 
-    const {bitcoin, ethereum} = response.data;
+    const { bitcoin, ethereum, tether, binancecoin, tron } = response.data;
 
     if (
       bitcoin &&
@@ -1047,10 +1052,11 @@ async function update_current_rates(req, res) {
       await rates.findOneAndUpdate(
         {},
         {
-          btc: {usd: bitcoin.usd},
-          eth: {usd: ethereum.usd},
-          usdt: {usd: response.data?.["tether"]?.usd},
-          bnb: {usd: response.data?.["binancecoin"]?.usd},
+          btc: { usd: bitcoin.usd },
+          eth: { usd: ethereum.usd },
+          usdt: { usd: tether?.usd },
+          bnb: { usd: binancecoin?.usd },
+          trx: { usd: tron?.usd },
         }
       );
     } else {
@@ -1075,7 +1081,7 @@ async function get_rates(req, res) {
 
 async function get_recepient_name(req, res) {
   try {
-    let {address} = req.body;
+    let { address } = req.body;
 
     if (address?.length < 42) {
       return main_helper.error_response(
@@ -1086,7 +1092,7 @@ async function get_recepient_name(req, res) {
 
     address = address.toLowerCase();
 
-    const userAccount = await account_meta.findOne({address});
+    const userAccount = await account_meta.findOne({ address });
 
     if (!userAccount) {
       return main_helper.error_response(
@@ -1150,8 +1156,8 @@ async function become_elite_member(req, res) {
     if (!address)
       return main_helper.error_response(res, "You are not logged in");
     let account_change = await accounts.findOneAndUpdate(
-      {account_owner: address, account_category: "main"},
-      {elite_member: "pending"}
+      { account_owner: address, account_category: "main" },
+      { elite_member: "pending" }
     );
     if (account_change) {
       return main_helper.success_response(res, "success");
