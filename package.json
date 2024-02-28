@@ -11,7 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "@cubitrix/cubitrix-node-transactions-module": ">=0.0.250",
-    "@cubitrix/models": ">=0.1.53",
+    "@cubitrix/models": ">=0.1.57",
     "async-mutex": ">=0.4.0",
     "axios": "^1.4.0",
     "bcrypt": "^5.1.0",
