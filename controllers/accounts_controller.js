@@ -285,6 +285,7 @@ async function handle_step(req, res) {
     const ipAddress =
       req.headers["x-forwarded-for"] || req.connection.remoteAddress;
     let ipAddresses = mainAccount.ips ?? [];
+    
     if (!ipAddresses.includes(ipAddress)) {
       ipAddresses.push(ipAddress);
       await accounts.findOneAndUpdate(
@@ -301,6 +302,7 @@ async function handle_step(req, res) {
       {step, active},
       {new: true}
     );
+
     if (step == 6) {
       let mainAccountMeta = await account_meta.findOne({
         address: mainAccount.account_owner,
@@ -310,7 +312,7 @@ async function handle_step(req, res) {
         mainAccountMeta.email,
         mainAccountMeta.name
       );
-      console.log(mainAccountMeta, "mainAccountMeta");
+     
       return main_helper.success_response(res, {
         message: "success",
         account: updatedMainAccount,
