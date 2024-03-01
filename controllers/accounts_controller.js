@@ -619,13 +619,13 @@ async function activate_account(req, res) {
       ) {
         let updateObj = {};
 
-        if (+StakersRes?.currTierId === 0) {
+        if (+StakersRes?.currTierId === 1) {
           updateObj.value = "Novice Navigator";
-        } else if (+StakersRes?.currTierId === 1) {
-          updateObj.value = "Stellar Standard";
         } else if (+StakersRes?.currTierId === 2) {
-          updateObj.value = "Expert Edge";
+          updateObj.value = "Stellar Standard";
         } else if (+StakersRes?.currTierId === 3) {
+          updateObj.value = "Expert Edge";
+        } else if (+StakersRes?.currTierId === 4) {
           updateObj.value = "Platinum Privilege";
         } else {
           updateObj.value = "Diamond VIP";
