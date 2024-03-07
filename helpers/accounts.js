@@ -1,4 +1,4 @@
-const {verified_emails} = require("@cubitrix/models");
+const { verified_emails } = require("@cubitrix/models");
 
 const main_helper = require("../helpers/index");
 const email_helper = require("../helpers/email_template");
@@ -72,8 +72,8 @@ async function check_and_send_verification_email(address, email) {
   }
   const results = await Promise.allSettled([
     generate_verification_code(),
-    verified_emails.findOne({address}),
-    verified_emails.find({email}),
+    verified_emails.findOne({ address }),
+    verified_emails.find({ email }),
   ]);
   if (results[0].status === "rejected")
     return main_helper.error_message(results[0].reason.toString());
@@ -209,6 +209,40 @@ async function send_greeting_email(email, userName) {
   }
 }
 
+async function help_support_helper(
+  selectedCategory,
+  inputText,
+  userName,
+  userEmail,
+  userAddress
+) {
+  try {
+    let check_email = check_email_on_company(userEmail);
+
+    if (!check_email) {
+      return main_helper.error_message("Email is not correct");
+    }
+
+    var mailOptions = {
+      from: userEmail,
+      to: process.env.SENDER_EMAIL,
+      subject: `Help & Support - ${selectedCategory}`,
+      html: email_helper.help_support_template(
+        inputText,
+        userName,
+        userAddress,
+        userEmail
+      ),
+    };
+
+    await transporter.sendMail(mailOptions);
+    return main_helper.success_message("Email sent");
+  } catch (e) {
+    console.log(e);
+    return main_helper.error_message("Sending email failed");
+  }
+}
+
 module.exports = {
   generate_verification_code,
   check_and_send_verification_email,
@@ -216,4 +250,5 @@ module.exports = {
   send_verification_mail,
   check_email_on_company,
   send_greeting_email,
+  help_support_helper,
 };
