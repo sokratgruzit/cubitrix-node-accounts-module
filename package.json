@@ -1,6 +1,6 @@
 {
   "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.1.197",
+  "version": "0.1.198",
   "description": "module for managing accounts data",
   "main": "accounts.js",
   "scripts": {
@@ -10,7 +10,7 @@
   "author": "jinx",
   "license": "MIT",
   "dependencies": {
-    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.262",
+    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.281",
     "@cubitrix/models": ">=0.1.66",
     "async-mutex": ">=0.4.0",
     "axios": "^1.4.0",
@@ -31,7 +31,7 @@
     "web3-eth-accounts": "^1.8.1"
   },
   "peerDependencies": {
-    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.262",
+    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.281",
     "@cubitrix/models": ">=0.1.66",
     "async-mutex": ">=0.4.0",
     "axios": "^1.4.0",
