@@ -285,7 +285,7 @@ async function handle_step(req, res) {
     const ipAddress =
       req.headers["x-forwarded-for"] || req.connection.remoteAddress;
     let ipAddresses = mainAccount.ips ?? [];
-    
+
     if (!ipAddresses.includes(ipAddress)) {
       ipAddresses.push(ipAddress);
       await accounts.findOneAndUpdate(
@@ -312,7 +312,7 @@ async function handle_step(req, res) {
         mainAccountMeta.email,
         mainAccountMeta.name
       );
-     
+
       return main_helper.success_response(res, {
         message: "success",
         account: updatedMainAccount,
@@ -1085,14 +1085,35 @@ async function get_recepient_name(req, res) {
   try {
     let { address } = req.body;
 
-    if (address?.length < 42) {
+    if (!address) {
       return main_helper.error_response(
         res,
-        main_helper.error_message("address is not valid")
+        main_helper.error_message("Please provide an address or email")
       );
     }
 
-    address = address.toLowerCase();
+    const isEmail = /\S+@\S+\.\S+/.test(address);
+    if (isEmail) {
+      let recipientAccount = await account_meta.findOne({ email: address });
+
+      if (!recipientAccount) {
+        return main_helper.error_response(
+          res,
+          "No account found associated with the provided email"
+        );
+      }
+
+      address = recipientAccount.address;
+    } else {
+      if (address.length < 42) {
+        return main_helper.error_response(
+          res,
+          main_helper.error_message("Address is not valid")
+        );
+      }
+
+      address = address.toLowerCase();
+    }
 
     const userAccount = await account_meta.findOne({ address });
 
@@ -1107,8 +1128,8 @@ async function get_recepient_name(req, res) {
       name: hideName(userAccount?.name ?? ""),
     });
   } catch (e) {
-    console.log(e, "error getting recepient name");
-    res.status(500).json("failed to get recepient name");
+    console.log(e, "error getting recipient name");
+    res.status(500).json("failed to get recipient name");
   }
 }
 
