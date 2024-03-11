@@ -60,6 +60,7 @@ router.get("/get_rates", account_controller.get_rates);
 router.post("/get_recepient_name", account_controller.get_recepient_name);
 
 router.post("/check-email", account_meta_controller.check_email);
+router.post("/send-email-to-support", account_meta_controller.send_email_to_support);
 // get all account
 
 module.exports = router;

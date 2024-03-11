@@ -103,8 +103,35 @@ function reset_password_template(reset_password_link) {
 `;
 }
 
+const help_support_template = (inputText, userName, userAddress, userEmail) => {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <title>Help and Support</title>
+</head>
+<body>
+  <table align="center" width="600" cellpadding="0" cellspacing="0" style="background-color: #fff; border-collapse: collapse;">
+    <tr>
+      <td style="padding: 20px;">
+        <h1 style="text-align:center;">Help and Support</h1>
+        <p>Dear AONE Team,</p>
+        <p>${inputText}</p>
+        <p>Best regards,</p>
+        <p>${userName}</p>
+        <div style="display: flex;">
+          <p>${userAddress}</p>
+          <p style="margin-left: 10px;">${userEmail}</p>
+        </div>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+};
+
 module.exports = {
   verification_template,
   reset_password_template,
   greeting_template,
+  help_support_template,
 };
