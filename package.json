@@ -1,6 +1,6 @@
 {
   "name": "@cubitrix/cubitrix-node-accounts-module",
-  "version": "0.1.214",
+  "version": "0.1.224",
   "description": "module for managing accounts data",
   "main": "accounts.js",
   "scripts": {
@@ -10,7 +10,7 @@
   "author": "jinx",
   "license": "MIT",
   "dependencies": {
-    "@cubitrix/cubitrix-node-transactions-module": ">=0.1.286",
+    "@cubitrix/cubitrix-node-transactions-module": ">=0.0.281",
     "@cubitrix/models": ">=0.1.66",
     "async-mutex": ">=0.4.0",
     "axios": "^1.4.0",
@@ -25,7 +25,7 @@
     "mongoose-aggregate-paginate-v2": "^1.0.6",
     "mongoose-paginate": "^5.0.3",
     "mongoose-slug-updater": "^3.3.0",
-    "nodemailer": "^6.8.0",
+    "nodemailer": "^6.9.12",
     "speakeasy": "^2.0.0",
     "web3": "^1.8.2",
     "web3-eth-accounts": "^1.8.1"
