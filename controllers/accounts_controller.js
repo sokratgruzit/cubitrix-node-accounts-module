@@ -627,8 +627,10 @@ async function activate_account(req, res) {
           updateObj.value = "Expert Edge";
         } else if (+StakersRes?.currTierId === 4) {
           updateObj.value = "Platinum Privilege";
-        } else {
+        } else if (+StakersRes?.currTierId === 5) {
           updateObj.value = "Diamond VIP";
+        } else {
+          updateObj.value = "Visionary Voyager";
         }
 
         const amountInBigNumber = new BigNumber(result.amount);

@@ -23,7 +23,7 @@ let transporter, transporterConfig;
 if (USE_CUSTOM_SMTP === "true") {
   transporterConfig = {
     host: CUSTOM_SMTP_HOST,
-    port: parseInt(CUSTOM_SMTP_PORT),
+    port: CUSTOM_SMTP_PORT,
     secure: CUSTOM_SMTP_SECURE === 'true',
     auth: {
       user: CUSTOM_SMTP_USER,
@@ -163,9 +163,8 @@ async function send_verification_mail(email, verification_code, userName) {
         userName
       ),
     };
-    console.log(mailOptions)
+    
     await transporter.sendMail(mailOptions);
-    console.log(transporter)
     return main_helper.success_message("Email sent");
   } catch (e) {
     console.log(e);
