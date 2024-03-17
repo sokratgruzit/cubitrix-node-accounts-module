@@ -25,7 +25,6 @@ const web3_accounts = require("web3-eth-accounts");
 const Web3 = require("web3");
 const web3 = new Web3(process.env.WEB3_PROVIDER_URL);
 
-const WBNB = require("../abi/WBNB.json");
 const STACK_ABI = require("../abi/stack.json");
 
 const ObjectId = require("mongodb").ObjectId;
@@ -618,7 +617,7 @@ async function activate_account(req, res) {
         !result.unstaked
       ) {
         let updateObj = {};
-
+        
         if (+StakersRes?.currTierId === 1) {
           updateObj.value = "Novice Navigator";
         } else if (+StakersRes?.currTierId === 2) {
@@ -1031,13 +1030,22 @@ async function update_current_rates(req, res) {
     const commodityResponse = await axios.get(
       `https://commodities-api.com/api/latest?access_key=${apiKey}&base=${base}&symbols=${commodities}`
     );
-    const commodityData = commodityResponse.data;
 
+    const commodityData = commodityResponse.data;
+    
     if (commodityData.data.success) {
       await rates.findOneAndUpdate(
         {},
         {
           gold: { usd: commodityData.data.rates.XAU },
+          // platinum: {usd: commodityData.data.rates.XPT},
+        }
+      );
+    } else {
+      await rates.findOneAndUpdate(
+        {},
+        {
+          gold: { usd: 2155.91 },
           // platinum: {usd: commodityData.data.rates.XPT},
         }
       );
