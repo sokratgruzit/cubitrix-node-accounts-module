@@ -617,7 +617,7 @@ async function activate_account(req, res) {
         !result.unstaked
       ) {
         let updateObj = {};
-        
+
         if (+StakersRes?.currTierId === 1) {
           updateObj.value = "Novice Navigator";
         } else if (+StakersRes?.currTierId === 2) {
@@ -628,7 +628,10 @@ async function activate_account(req, res) {
           updateObj.value = "Expert Edge";
         } else if (+StakersRes?.currTierId === 5) {
           updateObj.value = "Platinum Privilege";
-        } else if (+StakersRes?.currTierId === 6 || +StakersRes?.currTierId === 7) {
+        } else if (
+          +StakersRes?.currTierId === 6 ||
+          +StakersRes?.currTierId === 7
+        ) {
           updateObj.value = "Diamond VIP";
         } else {
           updateObj.value = "Visionary Voyager";
@@ -1032,7 +1035,7 @@ async function update_current_rates(req, res) {
     );
 
     const commodityData = commodityResponse.data;
-    
+
     if (commodityData.data.success) {
       await rates.findOneAndUpdate(
         {},
@@ -1103,7 +1106,7 @@ async function get_recepient_name(req, res) {
         main_helper.error_message("Please provide an address or email")
       );
     }
-
+    ///check email adress
     const isEmail = /\S+@\S+\.\S+/.test(address);
     if (isEmail) {
       let recipientAccount = await account_meta.findOne({ email: address });
@@ -1128,6 +1131,7 @@ async function get_recepient_name(req, res) {
     }
 
     const userAccount = await account_meta.findOne({ address });
+    ///check email adress
 
     if (!userAccount) {
       return main_helper.error_response(
